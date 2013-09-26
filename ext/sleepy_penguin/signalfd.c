@@ -44,11 +44,11 @@ static void value2sigset(sigset_t *mask, VALUE set)
 	switch (TYPE(set)) {
 	case T_NIL: return;
 	case T_ARRAY: {
-		VALUE *ptr = RARRAY_PTR(set);
+		long i;
 		long len = RARRAY_LEN(set);
 
-		while (--len >= 0)
-			sigaddset(mask, sig2int(*ptr++));
+		for (i = 0; i < len; i++)
+			sigaddset(mask, sig2int(rb_ary_entry(set, i)));
 		}
 		break;
 	default:

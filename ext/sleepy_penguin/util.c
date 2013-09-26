@@ -14,13 +14,13 @@ int rb_sp_get_flags(VALUE klass, VALUE flags, int default_flags)
 	case T_SYMBOL:
 		return NUM2INT(rb_const_get(klass_for(klass), SYM2ID(flags)));
 	case T_ARRAY: {
-		VALUE *ptr = RARRAY_PTR(flags);
+		long i;
 		long len = RARRAY_LEN(flags);
 		int rv = 0;
 
 		klass = klass_for(klass);
-		while (--len >= 0) {
-			VALUE tmp = *ptr++;
+		for (i = 0; i < len; i++) {
+			VALUE tmp = rb_ary_entry(flags, i);
 
 			Check_Type(tmp, T_SYMBOL);
 			tmp = rb_const_get(klass, SYM2ID(tmp));
@@ -42,13 +42,13 @@ unsigned rb_sp_get_uflags(VALUE klass, VALUE flags)
 	case T_SYMBOL:
 		return NUM2UINT(rb_const_get(klass_for(klass), SYM2ID(flags)));
 	case T_ARRAY: {
-		VALUE *ptr = RARRAY_PTR(flags);
+		long i;
 		long len = RARRAY_LEN(flags);
 		unsigned rv = 0;
 
 		klass = klass_for(klass);
-		while (--len >= 0) {
-			VALUE tmp = *ptr++;
+		for (i = 0; i < len; i++) {
+			VALUE tmp = rb_ary_entry(flags, i);
 
 			Check_Type(tmp, T_SYMBOL);
 			tmp = rb_const_get(klass, SYM2ID(tmp));

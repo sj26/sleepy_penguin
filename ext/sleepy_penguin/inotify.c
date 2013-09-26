@@ -255,15 +255,15 @@ static VALUE take(int argc, VALUE *argv, VALUE self)
 static VALUE events(VALUE self)
 {
 	long len = RARRAY_LEN(checks);
-	VALUE *ptr = RARRAY_PTR(checks);
+	long i;
 	VALUE sym;
 	VALUE rv = rb_ary_new();
 	uint32_t mask;
 	uint32_t event_mask = NUM2UINT(rb_funcall(self, id_mask, 0));
 
-	for (; (len -= 2) >= 0;) {
-		sym = *ptr++;
-		mask = NUM2UINT(*ptr++);
+	for (i = 0; i < len; ) {
+		sym = rb_ary_entry(checks, i++);
+		mask = NUM2UINT(rb_ary_entry(checks, i++));
 		if ((event_mask & mask) == mask)
 			rb_ary_push(rv, sym);
 	}
