@@ -87,7 +87,12 @@ class TestEpoll < Test::Unit::TestCase
     port = srv.addr[1]
     addr = Socket.pack_sockaddr_in(port, host)
     sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-    assert_raises(Errno::EINPROGRESS) { sock.connect_nonblock(addr) }
+    begin
+      sock.connect_nonblock(addr)
+      exc = nil
+    rescue Errno::EINPROGRESS => exc
+    end
+    assert_kind_of Errno::EINPROGRESS, exc
     IO.select(nil, [ sock ], [sock ])
     @ep.add(sock, epflags)
     tmp = []
