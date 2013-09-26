@@ -1,5 +1,8 @@
-#define _GNU_SOURCE
 #include <ruby.h>
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE /* TODO: confirm this is needed */
+#endif
+
 #include <unistd.h>
 #include <sys/types.h>
 #include "git_version.h"
