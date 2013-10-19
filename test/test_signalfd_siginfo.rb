@@ -1,8 +1,8 @@
-require 'test/unit'
+require './test/helper'
 $-w = true
 require 'sleepy_penguin'
 
-class TestSignalFDSigInfo < Test::Unit::TestCase
+class TestSignalFDSigInfo < Testcase
   include SleepyPenguin
 
   def test_members

@@ -1,10 +1,10 @@
-require 'test/unit'
+require './test/helper'
 require 'fcntl'
 $-w = true
 
 require 'sleepy_penguin'
 
-class TestTimerFD < Test::Unit::TestCase
+class TestTimerFD < Testcase
   include SleepyPenguin
 
   def test_constants

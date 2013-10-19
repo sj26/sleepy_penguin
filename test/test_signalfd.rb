@@ -1,4 +1,4 @@
-require 'test/unit'
+require './test/helper'
 require "dl"
 begin
   require "dl/func"
@@ -7,7 +7,7 @@ end
 $-w = true
 require 'sleepy_penguin'
 
-class TestSignalFD < Test::Unit::TestCase
+class TestSignalFD < Testcase
   include SleepyPenguin
 
   def setup

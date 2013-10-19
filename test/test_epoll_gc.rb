@@ -1,9 +1,9 @@
-require 'test/unit'
+require './test/helper'
 $-w = true
 
 require 'sleepy_penguin'
 
-class TestEpollGC < Test::Unit::TestCase
+class TestEpollGC < Testcase
   include SleepyPenguin
 
   def setup

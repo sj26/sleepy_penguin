@@ -1,9 +1,9 @@
-require 'test/unit'
+require './test/helper'
 $-w = true
 Thread.abort_on_exception = true
 require 'sleepy_penguin'
 
-class TestKqueue < Test::Unit::TestCase
+class TestKqueue < Testcase
   include SleepyPenguin
 
   def test_kqueue
