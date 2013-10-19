@@ -52,7 +52,7 @@ class TestEpoll < Testcase
     @ep.close
     assert ! epdup.closed?
     pid = fork do
-      exit(!epdup.closed? && @ep.closed?)
+      exit!(!epdup.closed? && @ep.closed?)
     end
     _, status = Process.waitpid2(pid)
     assert status.success?, status.inspect
