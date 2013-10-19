@@ -17,11 +17,7 @@ class TestInotify < Testcase
   def test_new
     @ino = Inotify.new
     assert_kind_of(IO, ino)
-    if RUBY_VERSION.to_f >= 2.0
-      assert_equal 1, ino.fcntl(Fcntl::F_GETFD)
-    else
-      assert_equal 0, ino.fcntl(Fcntl::F_GETFD)
-    end
+    check_cloexec(ino)
   end
 
   def test_constants
