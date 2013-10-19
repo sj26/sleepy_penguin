@@ -100,7 +100,7 @@ int rb_sp_io_closed(VALUE io)
 	case T_FILE:
 		break;
 	default:
-		io = rb_convert_type(io, T_FILE, "IO", "to_io");
+		io = rb_io_get_io(io);
 	}
 
 	return my_rb_io_closed(io);
@@ -110,7 +110,7 @@ int rb_sp_fileno(VALUE io)
 {
 	rb_io_t *fptr;
 
-	io = rb_convert_type(io, T_FILE, "IO", "to_io");
+	io = rb_io_get_io(io);
 	GetOpenFile(io, fptr);
 	return FPTR_TO_FD(fptr);
 }
