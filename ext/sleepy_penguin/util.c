@@ -1,5 +1,13 @@
 #include "sleepy_penguin.h"
 
+#ifndef HAVE_RB_IO_GET_IO
+static VALUE my_io_get_io(VALUE io)
+{
+	return rb_convert_type(io, T_FILE, "IO", "to_io");
+}
+#  define rb_io_get_io(io) my_io_get_io((io))
+#endif /* HAVE_RB_IO_GET_IO */
+
 static VALUE klass_for(VALUE klass)
 {
 	return (TYPE(klass) == T_CLASS) ? klass : CLASS_OF(klass);
