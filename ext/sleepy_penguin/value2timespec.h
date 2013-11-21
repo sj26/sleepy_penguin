@@ -42,8 +42,8 @@ static struct timespec *value2timespec(struct timespec *ts, VALUE num)
 	}}
 	{
 		VALUE tmp = rb_inspect(num);
-		rb_raise(rb_eTypeError, "can't convert %s into timespec",
-			 StringValuePtr(tmp));
+		const char *str = StringValueCStr(tmp);
+		rb_raise(rb_eTypeError, "can't convert %s into timespec", str);
 	}
 	rb_bug("rb_raise() failed, timespec failed");
 	return NULL;
