@@ -74,10 +74,8 @@ static int kq_fd_check(struct kq_per_thread *kpt)
 
 static struct kq_per_thread *kpt_get(VALUE self, int nchanges, int nevents)
 {
-	static __thread struct kq_per_thread *kpt;
+	struct kq_per_thread *kpt;
 	size_t size;
-	void *ptr;
-	int err;
 	int max = nchanges > nevents ? nchanges : nevents;
 
 	/* error check here to prevent OOM from posix_memalign */
@@ -86,20 +84,9 @@ static struct kq_per_thread *kpt_get(VALUE self, int nchanges, int nevents)
 		rb_sys_fail("kevent got negative events < 0");
 	}
 
-	if (kpt && kpt->capa >= max)
-		goto out;
-
 	size = sizeof(struct kq_per_thread) + sizeof(struct kevent) * max;
-
-	free(kpt); /* free(NULL) is POSIX */
-	err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, size);
-	if (err) {
-		errno = err;
-		rb_memerror();
-	}
-	kpt = ptr;
+	kpt = rb_sp_gettlsbuf(&size);
 	kpt->capa = max;
-out:
 	kpt->nchanges = nchanges;
 	kpt->nevents = nevents;
 	kpt->io = self;

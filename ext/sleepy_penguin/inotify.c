@@ -4,11 +4,6 @@
 #include <sys/ioctl.h>
 #include "missing_inotify.h"
 
-struct inbuf {
-	size_t capa;
-	void *ptr;
-};
-
 static ID id_inotify_tmp, id_mask;
 static VALUE cEvent, checks;
 
@@ -137,43 +132,31 @@ static VALUE event_new(struct inotify_event *e)
 
 struct inread_args {
 	int fd;
-	struct inbuf *inbuf;
+	size_t size;
+	void *buf;
 };
 
 static VALUE inread(void *ptr)
 {
 	struct inread_args *args = ptr;
 
-	return (VALUE)read(args->fd, args->inbuf->ptr, args->inbuf->capa);
-}
-
-static void inbuf_grow(struct inbuf *inbuf, size_t size)
-{
-	int err;
-
-	if (inbuf->capa >= size)
-		return;
-	free(inbuf->ptr);
-	err = posix_memalign(&inbuf->ptr, rb_sp_l1_cache_line_size, size);
-	if (err) {
-		errno = err;
-		rb_memerror();
-	}
-	inbuf->capa = size;
+	return (VALUE)read(args->fd, args->buf, args->size);
 }
 
 static void resize_internal_buffer(struct inread_args *args)
 {
 	int newlen;
 
-	if (args->inbuf->capa > 0x10000)
+	if (args->size > 0x10000)
 		rb_raise(rb_eRuntimeError, "path too long");
 
 	if (ioctl(args->fd, FIONREAD, &newlen) != 0)
 		rb_sys_fail("ioctl(inotify,FIONREAD)");
 
-	if (newlen > 0)
-		inbuf_grow(args->inbuf, (size_t)newlen);
+	if (newlen > 0) {
+		args->size = (size_t)newlen;
+		args->buf = rb_sp_gettlsbuf(&args->size);
+	}
 
 	if (newlen == 0) /* race: some other thread grabbed the data */
 		return;
@@ -192,8 +175,6 @@ static void resize_internal_buffer(struct inread_args *args)
  */
 static VALUE take(int argc, VALUE *argv, VALUE self)
 {
-	static __thread struct inbuf inbuf;
-
 	struct inread_args args;
 	VALUE tmp = rb_ivar_get(self, id_inotify_tmp);
 	struct inotify_event *e, *end;
@@ -206,9 +187,9 @@ static VALUE take(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "01", &nonblock);
 
-	inbuf_grow(&inbuf, 128);
 	args.fd = rb_sp_fileno(self);
-	args.inbuf = &inbuf;
+	args.size = 128;
+	args.buf = rb_sp_gettlsbuf(&args.size);
 
 	if (RTEST(nonblock))
 		rb_sp_set_nonblock(args.fd);
@@ -228,9 +209,8 @@ static VALUE take(int argc, VALUE *argv, VALUE self)
 				rb_sys_fail("read(inotify)");
 		} else {
 			/* buffer in userspace to minimize read() calls */
-			end = (struct inotify_event *)
-					((char *)args.inbuf->ptr + r);
-			for (e = args.inbuf->ptr; e < end; ) {
+			end = (struct inotify_event *)((char *)args.buf + r);
+			for (e = args.buf; e < end; ) {
 				VALUE event = event_new(e);
 				if (NIL_P(rv))
 					rv = event;

@@ -4,10 +4,17 @@
 #endif
 
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include "git_version.h"
+#include "sleepy_penguin.h"
 #define L1_CACHE_LINE_MAX 128 /* largest I've seen (Pentium 4) */
 size_t rb_sp_l1_cache_line_size;
+static pthread_key_t rb_sp_key;
+struct rb_sp_tlsbuf {
+	size_t capa;
+	unsigned char ptr[FLEX_ARRAY];
+};
 
 #ifdef HAVE_SYS_EVENT_H
 void sleepy_penguin_init_kqueue(void);
@@ -56,9 +63,57 @@ static size_t l1_cache_line_size_detect(void)
 	return L1_CACHE_LINE_MAX;
 }
 
+static void sp_once(void)
+{
+	int err = pthread_key_create(&rb_sp_key, free);
+
+	if (err) {
+		errno = err;
+		rb_sys_fail( "pthread_key_create");
+	}
+}
+
+void *rb_sp_gettlsbuf(size_t *size)
+{
+	struct rb_sp_tlsbuf *buf = pthread_getspecific(rb_sp_key);
+	void *ptr;
+	int err;
+	size_t bytes;
+
+	if (buf && buf->capa >= *size) {
+		*size = buf->capa;
+		goto out;
+	}
+
+	free(buf);
+	bytes = *size + sizeof(struct rb_sp_tlsbuf);
+	err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, bytes);
+	if (err) {
+		errno = err;
+		rb_memerror(); /* fatal */
+	}
+
+	buf = ptr;
+	buf->capa = *size;
+	err = pthread_setspecific(rb_sp_key, buf);
+	if (err != 0) {
+		errno = err;
+		rb_sys_fail("BUG: pthread_setspecific");
+	}
+out:
+	return buf->ptr;
+}
+
 void Init_sleepy_penguin_ext(void)
 {
 	VALUE mSleepyPenguin;
+	static pthread_once_t once = PTHREAD_ONCE_INIT;
+	int err = pthread_once(&once, sp_once);
+
+	if (err) {
+		errno = err;
+		rb_sys_fail("pthread_once");
+	}
 
 	rb_sp_l1_cache_line_size = l1_cache_line_size_detect();
 

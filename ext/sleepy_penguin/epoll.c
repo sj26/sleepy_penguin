@@ -1,7 +1,6 @@
 #include "sleepy_penguin.h"
 #ifdef HAVE_SYS_EPOLL_H
 #include <sys/epoll.h>
-#include <unistd.h>
 #include <time.h>
 #include "missing_clock_gettime.h"
 #include "missing_epoll.h"
@@ -52,10 +51,8 @@ static int ep_fd_check(struct ep_per_thread *ept)
 
 static struct ep_per_thread *ept_get(VALUE self, int maxevents)
 {
-	static __thread struct ep_per_thread *ept;
+	struct ep_per_thread *ept;
 	size_t size;
-	int err;
-	void *ptr;
 
 	/* error check here to prevent OOM from posix_memalign */
 	if (maxevents <= 0) {
@@ -63,21 +60,11 @@ static struct ep_per_thread *ept_get(VALUE self, int maxevents)
 		rb_sys_fail("epoll_wait maxevents <= 0");
 	}
 
-	if (ept && ept->capa >= maxevents)
-		goto out;
-
 	size = sizeof(struct ep_per_thread) +
 	       sizeof(struct epoll_event) * maxevents;
 
-	free(ept); /* free(NULL) is POSIX and works on glibc */
-	err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, size);
-	if (err) {
-		errno = err;
-		rb_memerror();
-	}
-	ept = ptr;
+	ept = rb_sp_gettlsbuf(&size);
 	ept->capa = maxevents;
-out:
 	ept->maxevents = maxevents;
 	ept->io = self;
 	ept->fd = rb_sp_fileno(ept->io);
