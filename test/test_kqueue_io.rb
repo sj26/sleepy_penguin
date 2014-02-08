@@ -29,6 +29,25 @@ class TestKqueueIO < Testcase
     assert_raises(TypeError) { kq.kevent("HI") }
   end
 
+  def test_delete
+    kq = Kqueue::IO.new
+    @to_close << kq
+    r, w = IO.pipe
+    @to_close << r
+    @to_close << w
+    kq.kevent(Kevent[r.fileno, EvFilt::READ, Ev::ADD, 0, 0, r])
+    w.syswrite "."
+    2.times do
+      got = []
+      kq.kevent(nil, 1, 0) { |*args| got << args }
+      assert_equal 1, got.size
+    end
+    kq.kevent(Kevent[r.fileno, EvFilt::READ|EvFilt::WRITE, Ev::DELETE, 0, 0, 0])
+    got = []
+    kq.kevent(nil, 1, 0) { |*args| got << args }
+    assert_equal 0, got.size
+  end
+
   def test_multi_event
     kq = Kqueue::IO.new
     @to_close << kq
