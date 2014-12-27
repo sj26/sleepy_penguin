@@ -103,4 +103,17 @@ class TestInotify < Testcase
     end
     assert_equal 0, nr
   end
+
+  def test_rm_watch
+    ino = Inotify.new Inotify::CLOEXEC
+    tmp = Tempfile.new 'a'
+    wd = ino.add_watch tmp.path, Inotify::ALL_EVENTS
+    assert_kind_of Integer, wd
+    tmp.syswrite '.'
+    event = ino.take
+    assert_equal wd, event.wd
+    assert_kind_of Inotify::Event, event
+    assert_equal [:MODIFY], event.events
+    assert_equal 0, ino.rm_watch(wd)
+  end
 end if defined?(SleepyPenguin::Inotify)
