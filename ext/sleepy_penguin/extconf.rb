@@ -20,6 +20,7 @@ end
 have_type('clockid_t', 'time.h')
 have_func('clock_gettime', 'time.h')
 have_func('epoll_create1', %w(sys/epoll.h))
+have_func('inotify_init1', %w(sys/inotify.h))
 have_func('rb_thread_call_without_gvl')
 have_func('rb_thread_blocking_region')
 have_func('rb_thread_io_blocking_region')
