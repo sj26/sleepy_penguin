@@ -124,8 +124,13 @@ static VALUE event_new(struct inotify_event *e)
 	VALUE cookie = UINT2NUM(e->cookie);
 	VALUE name;
 
-	/* name may be zero-padded, so we do strlen() */
-	name = e->len ? rb_str_new(e->name, strlen(e->name)) : Qnil;
+	/*
+	 * e->name is zero-padded, so we may use rb_str_new2.
+	 * We do not use rb_str_new(e->name, e->len) because
+	 * e->len counts all \0 padding bytes, and there may be
+	 * multiple padding bytes
+	 */
+	name = e->len ? rb_str_new2(e->name) : Qnil;
 
 	return rb_struct_new(cEvent, wd, mask, cookie, name);
 }
