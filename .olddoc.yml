@@ -2,5 +2,6 @@
 cgit_url: http://bogomips.org/sleepy_penguin.git
 git_url: git://bogomips.org/sleepy_penguin.git
 rdoc_url: http://bogomips.org/sleepy_penguin/
-private_email: sleepy.penguin@bogomips.org
-public_email: sleepy.penguin@librelist.org
+ml_url: http://bogomips.org/sleepy-penguin/
+private_email: bofh@bogomips.org
+public_email: sleepy-penguin@bogomips.org

@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.homepage = Olddoc.config['rdoc_url']
   s.authors = ["#{name} hackers"]
   s.description = readme_description
-  s.email = %q{sleepy.penguin@librelist.org}
+  s.email = %q{sleepy-penguin@bogomips.org}
   s.extra_rdoc_files = extra_rdoc_files(manifest)
   s.files = manifest
   s.rdoc_options = rdoc_options
