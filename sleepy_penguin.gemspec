@@ -20,5 +20,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency('olddoc', '~> 1.0')
   s.add_development_dependency('strace_me', '~> 1.0')
 
-  s.licenses = %w(LGPLv2.1 LGPLv3)
+  s.licenses = %w(LGPLv2.1+)
 end
