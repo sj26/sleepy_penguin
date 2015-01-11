@@ -12,8 +12,7 @@
 Makefile
 log/
 pkg/
-/NEWS
-/ChangeLog
+/NEWS*
 /.manifest
 /GIT-VERSION-FILE
 /man
