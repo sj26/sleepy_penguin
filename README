@@ -7,7 +7,7 @@ for kqueue on FreeBSD (and likely OpenBSD/NetBSD) are also provided.
 
 == Features
 
-* Thread-safe blocking operations for all versions of Matz Ruby and Rubinius
+* Thread-safe blocking operations for all versions of Matz Ruby
 
 * IO-like objects are backwards-compatible with IO.select.
 
