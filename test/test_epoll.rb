@@ -343,6 +343,13 @@ class TestEpoll < Testcase
     @ep.close
     io = Epoll.new(Epoll::CLOEXEC).to_io
     assert((io.fcntl(Fcntl::F_GETFD) & Fcntl::FD_CLOEXEC) == Fcntl::FD_CLOEXEC)
+    io.close
+
+    # prettier, slower, but more memory efficient due to lack of caching
+    # due to the constant cache:
+    io = Epoll.new(:CLOEXEC).to_io
+
+    assert((io.fcntl(Fcntl::F_GETFD) & Fcntl::FD_CLOEXEC) == Fcntl::FD_CLOEXEC)
   end
 
   def test_new

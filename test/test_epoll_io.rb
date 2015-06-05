@@ -23,7 +23,7 @@ class TestEpollIO < Testcase
 
   class EpSub < Epoll::IO
     def self.new
-      super(SleepyPenguin::Epoll::CLOEXEC)
+      super(:CLOEXEC)
     end
   end
 
