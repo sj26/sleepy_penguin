@@ -1,5 +1,8 @@
 class SleepyPenguin::Epoll::IO
   # :stopdoc:
+
+  # This is only for Ruby 1.8 using green threads
+
   alias __epoll_wait epoll_wait
   undef_method :epoll_wait
   def epoll_wait(maxevents = 64, timeout = nil)
