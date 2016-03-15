@@ -1,4 +1,5 @@
 #include "sleepy_penguin.h"
+#include "sp_copy.h"
 #ifdef HAVE_SPLICE
 #include <errno.h>
 #include <fcntl.h>
@@ -18,13 +19,6 @@ static VALUE sym_EAGAIN;
 #  define F_GETPIPE_SZ    (F_LINUX_SPECIFIC_BASE + 8)
 #endif
 
-#ifndef SSIZET2NUM
-#  define SSIZET2NUM(x) LONG2NUM(x)
-#endif
-#ifndef NUM2SIZET
-#  define NUM2SIZET(x) NUM2ULONG(x)
-#endif
-
 static int check_fileno(VALUE io)
 {
 	int saved_errno = errno;
@@ -33,51 +27,9 @@ static int check_fileno(VALUE io)
 	return fd;
 }
 
-#if defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL) && defined(HAVE_RUBY_THREAD_H)
-/* Ruby 2.0+ */
-#  include <ruby/thread.h>
-#  define WITHOUT_GVL(fn,a,ubf,b) \
-        rb_thread_call_without_gvl((fn),(a),(ubf),(b))
-#elif defined(HAVE_RB_THREAD_BLOCKING_REGION)
-typedef VALUE (*my_blocking_fn_t)(void*);
-#  define WITHOUT_GVL(fn,a,ubf,b) \
-	rb_thread_blocking_region((my_blocking_fn_t)(fn),(a),(ubf),(b))
-
-#else /* Ruby 1.8 */
-/* partial emulation of the 1.9 rb_thread_blocking_region under 1.8 */
-#  include <rubysig.h>
-#  define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
-typedef void rb_unblock_function_t(void *);
-typedef void * rb_blocking_function_t(void *);
-static void * WITHOUT_GVL(rb_blocking_function_t *func, void *data1,
-			rb_unblock_function_t *ubf, void *data2)
-{
-	void *rv;
-
-	assert(RUBY_UBF_IO == ubf && "RUBY_UBF_IO required for emulation");
-
-	TRAP_BEG;
-	rv = func(data1);
-	TRAP_END;
-
-	return rv;
-}
-#endif /* ! HAVE_RB_THREAD_BLOCKING_REGION */
-
-#define IO_RUN(fn,data) WITHOUT_GVL((fn),(data),RUBY_UBF_IO,0)
-
-struct splice_args {
-	int fd_in;
-	int fd_out;
-	off_t *off_in;
-	off_t *off_out;
-	size_t len;
-	unsigned flags;
-};
-
 static void *nogvl_splice(void *ptr)
 {
-	struct splice_args *a = ptr;
+	struct copy_args *a = ptr;
 
 	return (void *)splice(a->fd_in, a->off_in, a->fd_out, a->off_out,
 	                     a->len, a->flags);
@@ -87,7 +39,7 @@ static ssize_t do_splice(int argc, VALUE *argv, unsigned dflags)
 {
 	off_t i = 0, o = 0;
 	VALUE io_in, off_in, io_out, off_out, len, flags;
-	struct splice_args a;
+	struct copy_args a;
 	ssize_t bytes;
 	ssize_t total = 0;
 

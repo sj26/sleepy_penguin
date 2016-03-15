@@ -19,6 +19,7 @@ unless have_macro('CLOCK_MONOTONIC', 'time.h')
 end
 have_type('clockid_t', 'time.h')
 have_func('clock_gettime', 'time.h')
+have_func('copy_file_range')
 have_func('epoll_create1', %w(sys/epoll.h))
 have_func('inotify_init1', %w(sys/inotify.h))
 have_func('splice', %w(fcntl.h))
