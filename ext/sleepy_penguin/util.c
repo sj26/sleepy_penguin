@@ -118,6 +118,9 @@ int rb_sp_fileno(VALUE io)
 {
 	rb_io_t *fptr;
 
+	if (RB_TYPE_P(io, T_FIXNUM))
+		return FIX2INT(io);
+
 	io = rb_io_get_io(io);
 	GetOpenFile(io, fptr);
 	return FPTR_TO_FD(fptr);

@@ -52,6 +52,8 @@ void sleepy_penguin_init_signalfd(void);
 #  define sleepy_penguin_init_signalfd() for(;0;)
 #endif
 
+void sleepy_penguin_init_splice(void);
+
 static size_t l1_cache_line_size_detect(void)
 {
 #ifdef _SC_LEVEL1_DCACHE_LINESIZE
@@ -127,4 +129,5 @@ void Init_sleepy_penguin_ext(void)
 	sleepy_penguin_init_eventfd();
 	sleepy_penguin_init_inotify();
 	sleepy_penguin_init_signalfd();
+	sleepy_penguin_init_splice();
 }
