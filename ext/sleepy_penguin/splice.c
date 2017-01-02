@@ -206,7 +206,8 @@ static ssize_t do_tee(int argc, VALUE *argv, unsigned dflags)
  * +flags+ may be zero (the default) or a combination of:
  * * SleepyPenguin::F_NONBLOCK
  *
- * Other splice-related flags are currently unimplemented or have no effect.
+ * Other splice-related flags are currently unimplemented in the
+ * kernel and have no effect.
  *
  * Returns the number of bytes duplicated if successful.
  * Raises EOFError when +io_in+ is closed and emptied.
