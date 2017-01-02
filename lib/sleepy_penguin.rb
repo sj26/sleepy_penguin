@@ -15,3 +15,7 @@ if defined?(SleepyPenguin::Inotify) &&
     # :startdoc
   end
 end
+
+if SleepyPenguin.respond_to?(:__splice) || SleepyPenguin.respond_to?(:__tee)
+  require_relative 'sleepy_penguin/splice'
+end

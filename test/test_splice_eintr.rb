@@ -27,7 +27,7 @@ class Test_Splice_EINTR < Test::Unit::TestCase
       sleep 0.01
       wr.write "HI"
     end
-    nr = SleepyPenguin.splice rd, nil, tmp, nil, 666
+    nr = SleepyPenguin.splice rd, tmp, 666
     assert_equal 2, nr
     assert_equal 1, @usr1
   end

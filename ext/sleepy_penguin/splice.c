@@ -35,117 +35,34 @@ static void *nogvl_splice(void *ptr)
 	                     a->len, a->flags);
 }
 
-static ssize_t do_splice(int argc, VALUE *argv, unsigned dflags)
+/* :nodoc: */
+static VALUE my_splice(VALUE mod, VALUE io_in, VALUE off_in,
+			VALUE io_out, VALUE off_out,
+			VALUE len, VALUE flags)
 {
 	off_t i = 0, o = 0;
-	VALUE io_in, off_in, io_out, off_out, len, flags;
 	struct copy_args a;
 	ssize_t bytes;
-	ssize_t total = 0;
-
-	rb_scan_args(argc, argv, "51",
-	             &io_in, &off_in, &io_out, &off_out, &len, &flags);
 
 	a.off_in = NIL_P(off_in) ? NULL : (i = NUM2OFFT(off_in), &i);
 	a.off_out = NIL_P(off_out) ? NULL : (o = NUM2OFFT(off_out), &o);
 	a.len = NUM2SIZET(len);
-	a.flags = NIL_P(flags) ? dflags : NUM2UINT(flags) | dflags;
+	a.flags = NUM2UINT(flags);
 
 	for (;;) {
 		a.fd_in = check_fileno(io_in);
 		a.fd_out = check_fileno(io_out);
 		bytes = (ssize_t)IO_RUN(nogvl_splice, &a);
+		if (bytes == 0) return Qnil;
 		if (bytes < 0) {
-			if (errno == EINTR)
-				continue;
-			if (total > 0)
-				return total;
-			return bytes;
-		} else if (bytes == 0) {
-			break;
-		} else {
-			return bytes;
+			switch (errno) {
+			case EINTR: continue;
+			case EAGAIN: return sym_EAGAIN;
+			default: rb_sys_fail("splice");
+			}
 		}
+		return SSIZET2NUM(bytes);
 	}
-
-	return total;
-}
-
-/*
- * call-seq:
- *    SleepyPenguin.splice(io_in, off_in, io_out, off_out, len) => integer
- *    SleepyPenguin.splice(io_in, off_in, io_out, off_out, len, flags) => integer
- *
- * Splice +len+ bytes from/to a pipe.  Either +io_in+ or +io_out+
- * MUST be a pipe.  +io_in+ and +io_out+ may BOTH be pipes as of
- * Linux 2.6.31 or later.
- *
- * +off_in+ and +off_out+ if non-nil may be used to
- * specify an offset for the non-pipe file descriptor.
- *
- * +flags+ defaults to zero if unspecified.
- * +flags+ may be a bitmask of the following flags:
- *
- * * SleepyPenguin::F_MOVE
- * * SleepyPenguin::F_NONBLOCK
- * * SleepyPenguin::F_MORE
- *
- * Returns the number of bytes spliced.
- * Raises EOFError when +io_in+ has reached end of file.
- * Raises Errno::EAGAIN if the SleepyPenguin::F_NONBLOCK flag is set
- * and the pipe has no data to read from or space to write to.  May
- * also raise Errno::EAGAIN if the non-pipe descriptor has no data
- * to read from or space to write to.
- *
- * As splice never exposes buffers to userspace, it will not take
- * into account userspace buffering done by Ruby or stdio.  It is
- * also not subject to encoding/decoding filters under Ruby 1.9.
- *
- * Consider using SleepyPenguin.trysplice if +io_out+ is a pipe or if you are using
- * non-blocking I/O on both descriptors as it avoids the cost of raising
- * common Errno::EAGAIN exceptions.
- *
- * See manpage for full documentation:
- * http://kernel.org/doc/man-pages/online/pages/man2/splice.2.html
- */
-static VALUE my_splice(int argc, VALUE *argv, VALUE self)
-{
-	ssize_t n = do_splice(argc, argv, 0);
-
-	if (n == 0)
-		rb_eof_error();
-	if (n < 0)
-		rb_sys_fail("splice");
-	return SSIZET2NUM(n);
-}
-
-/*
- * call-seq:
- *    SleepyPenguin.trysplice(io_in, off_in, io_out, off_out, len) => integer
- *    SleepyPenguin.trysplice(io_in, off_in, io_out, off_out, len, flags) => integer
- *
- * Exactly like SleepyPenguin.splice, except +:EAGAIN+ is returned when either
- * the read or write end would block instead of raising Errno::EAGAIN.
- *
- * SleepyPenguin::F_NONBLOCK is always passed for the pipe descriptor,
- * but this can still block if the non-pipe descriptor is blocking.
- *
- * See SleepyPenguin.splice documentation for more details.
- *
- * This method is recommended whenever +io_out+ is a pipe.
- */
-static VALUE trysplice(int argc, VALUE *argv, VALUE self)
-{
-	ssize_t n = do_splice(argc, argv, SPLICE_F_NONBLOCK);
-
-	if (n == 0)
-		return Qnil;
-	if (n < 0) {
-		if (errno == EAGAIN)
-			return sym_EAGAIN;
-		rb_sys_fail("splice");
-	}
-	return SSIZET2NUM(n);
 }
 
 struct tee_args {
@@ -163,111 +80,37 @@ static void *nogvl_tee(void *ptr)
 	return (void *)tee(a->fd_in, a->fd_out, a->len, a->flags);
 }
 
-static ssize_t do_tee(int argc, VALUE *argv, unsigned dflags)
+/* :nodoc: */
+static VALUE my_tee(VALUE mod, VALUE io_in, VALUE io_out,
+			VALUE len, VALUE flags)
 {
-	VALUE io_in, io_out, len, flags;
 	struct tee_args a;
 	ssize_t bytes;
-	ssize_t total = 0;
 
-	rb_scan_args(argc, argv, "31", &io_in, &io_out, &len, &flags);
 	a.len = (size_t)NUM2SIZET(len);
-	a.flags = NIL_P(flags) ? dflags : NUM2UINT(flags) | dflags;
+	a.flags = NUM2UINT(flags);
 
 	for (;;) {
 		a.fd_in = check_fileno(io_in);
 		a.fd_out = check_fileno(io_out);
 		bytes = (ssize_t)IO_RUN(nogvl_tee, &a);
+		if (bytes == 0) return Qnil;
 		if (bytes < 0) {
-			if (errno == EINTR)
-				continue;
-			if (total > 0)
-				return total;
-			return bytes;
-		} else if (bytes == 0) {
-			break;
-		} else {
-			return bytes;
+			switch (errno) {
+			case EINTR: continue;
+			case EAGAIN: return sym_EAGAIN;
+			default: rb_sys_fail("tee");
+			}
 		}
+		return SSIZET2NUM(bytes);
 	}
-
-	return total;
-}
-
-/*
- * call-seq:
- *   SleepyPenguin.tee(io_in, io_out, len) => integer
- *   SleepyPenguin.tee(io_in, io_out, len, flags) => integer
- *
- * Copies up to +len+ bytes of data from +io_in+ to +io_out+.  +io_in+
- * and +io_out+ must both refer to pipe descriptors.  +io_in+ and +io_out+
- * may not be endpoints of the same pipe.
- *
- * +flags+ may be zero (the default) or a combination of:
- * * SleepyPenguin::F_NONBLOCK
- *
- * Other splice-related flags are currently unimplemented in the
- * kernel and have no effect.
- *
- * Returns the number of bytes duplicated if successful.
- * Raises EOFError when +io_in+ is closed and emptied.
- * Raises Errno::EAGAIN when +io_in+ is empty and/or +io_out+ is full
- * and +flags+ contains SleepyPenguin::F_NONBLOCK
- *
- * Consider using SleepyPenguin.trytee if you are using
- * SleepyPenguin::F_NONBLOCK as it avoids the cost of raising
- * common Errno::EAGAIN exceptions.
- *
- * See manpage for full documentation:
- * http://kernel.org/doc/man-pages/online/pages/man2/tee.2.html
- */
-static VALUE my_tee(int argc, VALUE *argv, VALUE self)
-{
-	ssize_t n = do_tee(argc, argv, 0);
-
-	if (n == 0)
-		rb_eof_error();
-	if (n < 0)
-		rb_sys_fail("tee");
-
-	return SSIZET2NUM(n);
-}
-
-/*
- * call-seq:
- *    SleepyPenguin.trytee(io_in, io_out, len) => integer
- *    SleepyPenguin.trytee(io_in, io_out, len, flags) => integer
- *
- * Exactly like SleepyPenguin.tee, except +:EAGAIN+ is returned when either
- * the read or write end would block instead of raising Errno::EAGAIN.
- *
- * SleepyPenguin::F_NONBLOCK is always passed for the pipe descriptor,
- * but this can still block if the non-pipe descriptor is blocking.
- *
- * See SleepyPenguin.tee documentation for more details.
- */
-static VALUE trytee(int argc, VALUE *argv, VALUE self)
-{
-	ssize_t n = do_tee(argc, argv, SPLICE_F_NONBLOCK);
-
-	if (n == 0)
-		return Qnil;
-	if (n < 0) {
-		if (errno == EAGAIN)
-			return sym_EAGAIN;
-		rb_sys_fail("tee");
-	}
-
-	return SSIZET2NUM(n);
 }
 
 void sleepy_penguin_init_splice(void)
 {
 	VALUE mod = rb_define_module("SleepyPenguin");
-	rb_define_singleton_method(mod, "splice", my_splice, -1);
-	rb_define_singleton_method(mod, "trysplice", trysplice, -1);
-	rb_define_singleton_method(mod, "tee", my_tee, -1);
-	rb_define_singleton_method(mod, "trytee", trytee, -1);
+	rb_define_singleton_method(mod, "__splice", my_splice, 6);
+	rb_define_singleton_method(mod, "__tee", my_tee, 4);
 
 	/*
 	 * Attempt to move pages instead of copying.  This is only a hint

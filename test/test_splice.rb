@@ -18,7 +18,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.splice(tmp.fileno, nil, wr.fileno, nil, size, 0)
+    nr = SleepyPenguin.splice(tmp.fileno, wr.fileno, size)
     assert_equal size, nr
     assert_equal str, rd.sysread(size)
   end
@@ -32,7 +32,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.splice(tmp, nil, wr, nil, size, 0)
+    nr = SleepyPenguin.splice(tmp, wr, size)
     assert_equal size, nr
     assert_equal str, rd.sysread(size)
   end
@@ -46,7 +46,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.splice(tmp, nil, wr, nil, size)
+    nr = SleepyPenguin.splice(tmp, wr, size)
     assert_equal size, nr
     assert_equal str, rd.sysread(size)
   end
@@ -60,7 +60,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.trysplice(tmp, nil, wr, nil, size)
+    nr = SleepyPenguin.splice(tmp, wr, size, :nonblock, exception: false)
     assert_equal size, nr
     assert_equal str, rd.sysread(size)
   end
@@ -78,7 +78,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.splice(io_ish, nil, wr, nil, size, 0)
+    nr = SleepyPenguin.splice(io_ish, wr, size)
     assert_equal size, nr
     assert_equal str, rd.sysread(size)
   end
@@ -93,7 +93,7 @@ class TestSplice < Test::Unit::TestCase
     assert_equal 5, tmp.syswrite(str)
     tmp.sysseek(0)
 
-    nr = SleepyPenguin.splice(tmp.fileno, off, wr.fileno, nil, len, 0)
+    nr = SleepyPenguin.splice(tmp.fileno, wr.fileno, len, off_in: off)
     assert_equal len, nr
     assert_equal 'de', rd.sysread(len)
   end
@@ -104,7 +104,7 @@ class TestSplice < Test::Unit::TestCase
     tmp = Tempfile.new('ruby_splice')
 
     assert_equal 5, wr.syswrite(str)
-    nr = SleepyPenguin.splice(rd.fileno, nil, tmp.fileno, 3, str.size, 0)
+    nr = SleepyPenguin.splice(rd.fileno, tmp.fileno, str.size, off_out: 3)
     assert_equal 5, nr
     tmp.sysseek(0)
     assert_equal "\0\0\0abcde", tmp.sysread(9)
@@ -115,25 +115,25 @@ class TestSplice < Test::Unit::TestCase
     tmp = Tempfile.new('ruby_splice')
 
     assert_raises(Errno::EAGAIN) {
-      SleepyPenguin.splice(rd.fileno, nil, tmp.fileno, 0, 5,
-                           SleepyPenguin::F_NONBLOCK)
+      SleepyPenguin.splice(rd.fileno, tmp.fileno, 5, :nonblock, off_out: 0)
     }
   end
 
   def test_trysplice_nonblock
     rd, wr = IO.pipe
     tmp = Tempfile.new('ruby_splice')
-    assert_equal :EAGAIN,
-           SleepyPenguin.trysplice(rd, nil, tmp, 0, 5,
-                                   SleepyPenguin::F_NONBLOCK)
+    assert_equal :EAGAIN, SleepyPenguin.splice(rd, tmp, 5, :nonblock,
+                                               off_out: 0, exception: false)
   end
 
   def test_trysplice_nonblock_noargs
     rd, wr = IO.pipe
     tmp = Tempfile.new('ruby_splice')
-    assert_equal :EAGAIN, SleepyPenguin.trysplice(rd, nil, tmp, 0, 5)
-    assert_equal :EAGAIN, SleepyPenguin.trysplice(rd, nil, tmp, 0, 5,
-                                                  SleepyPenguin::F_MORE)
+    assert_equal :EAGAIN, SleepyPenguin.splice(rd, tmp, 5, :nonblock,
+                                               off_out: 0, exception: false)
+    assert_equal :EAGAIN, SleepyPenguin.splice(rd, tmp, 5, [:more,:nonblock],
+                                               off_out: 0,
+                                               exception: false)
   end
 
   def test_splice_eof
@@ -142,12 +142,10 @@ class TestSplice < Test::Unit::TestCase
     wr.syswrite 'abc'
     wr.close
 
-    nr = SleepyPenguin.splice(rd.fileno, nil, tmp.fileno, 0, 5,
-                              SleepyPenguin::F_NONBLOCK)
+    nr = SleepyPenguin.splice(rd.fileno, tmp.fileno, 5, :nonblock, off_out: 0)
     assert_equal 3, nr
     assert_raises(EOFError) {
-      SleepyPenguin.splice(rd.fileno, nil, tmp.fileno, 0, 5,
-                           SleepyPenguin::F_NONBLOCK)
+      SleepyPenguin.splice(rd.fileno, tmp.fileno, 5, :nonblock, off_out: 0)
     }
   end
 
@@ -157,10 +155,10 @@ class TestSplice < Test::Unit::TestCase
     wr.syswrite 'abc'
     wr.close
 
-    nr = SleepyPenguin.trysplice(rd, nil, tmp, 0, 5, SleepyPenguin::F_NONBLOCK)
+    nr = SleepyPenguin.splice(rd, tmp, 5, off_out: 0, exception: false)
     assert_equal 3, nr
-    assert_nil SleepyPenguin.trysplice(rd, nil, tmp, 0, 5,
-                                       SleepyPenguin::F_NONBLOCK)
+    assert_nil SleepyPenguin.splice(rd, tmp, 5, :nonblock,
+                                    off_out: 0, exception: false)
   end
 
   def test_splice_nonblock_socket
@@ -170,7 +168,7 @@ class TestSplice < Test::Unit::TestCase
     rs = TCPSocket.new('127.0.0.1', port)
     rs.nonblock = true
     assert_raises(Errno::EAGAIN) {
-      SleepyPenguin.splice(rs, nil, wp, nil, 1024, 0)
+      SleepyPenguin.splice(rs, wp, 1024)
     }
     rs.close
     server.close
@@ -183,7 +181,7 @@ class TestSplice < Test::Unit::TestCase
     rdb, wrb = IO.pipe
 
     assert_equal 5, wra.syswrite(str)
-    nr = SleepyPenguin.tee(rda.fileno, wrb.fileno, size, 0)
+    nr = SleepyPenguin.tee(rda.fileno, wrb.fileno, size)
     assert_equal 5, nr
     assert_equal str, rdb.sysread(5)
     assert_equal str, rda.sysread(5)
@@ -196,7 +194,7 @@ class TestSplice < Test::Unit::TestCase
     rdb, wrb = IO.pipe
 
     assert_equal 5, wra.syswrite(str)
-    nr = SleepyPenguin.trytee(rda, wrb, size, 0)
+    nr = SleepyPenguin.tee(rda, wrb, size, :nonblock, exception: false)
     assert_equal 5, nr
     assert_equal str, rdb.sysread(5)
     assert_equal str, rda.sysread(5)
@@ -207,7 +205,7 @@ class TestSplice < Test::Unit::TestCase
     rdb, wrb = IO.pipe
     wra.close
     assert_raises(EOFError) {
-      SleepyPenguin.tee(rda.fileno, wrb.fileno, 4096, 0)
+      SleepyPenguin.tee(rda.fileno, wrb.fileno, 4096)
     }
   end
 
@@ -215,7 +213,7 @@ class TestSplice < Test::Unit::TestCase
     rda, wra = IO.pipe
     rdb, wrb = IO.pipe
     wra.close
-    assert_nil SleepyPenguin.trytee(rda, wrb, 4096)
+    assert_nil SleepyPenguin.tee(rda, wrb, 4096, :nonblock, exception: false)
   end
 
   def test_tee_nonblock
@@ -229,7 +227,8 @@ class TestSplice < Test::Unit::TestCase
   def test_trytee_nonblock
     rda, wra = IO.pipe
     rdb, wrb = IO.pipe
-    assert_equal :EAGAIN, SleepyPenguin.trytee(rda, wrb, 4096)
+    assert_equal :EAGAIN, SleepyPenguin.tee(rda, wrb, 4096, :nonblock,
+                                            exception: false)
   end
 
   def test_tee_io
@@ -239,7 +238,7 @@ class TestSplice < Test::Unit::TestCase
     rdb, wrb = IO.pipe
 
     assert_equal 5, wra.syswrite(str)
-    nr = SleepyPenguin.tee(rda, wrb, size, 0)
+    nr = SleepyPenguin.tee(rda, wrb, size)
     assert_equal 5, nr
     assert_equal str, rdb.sysread(5)
     assert_equal str, rda.sysread(5)
