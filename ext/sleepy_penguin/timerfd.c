@@ -31,10 +31,8 @@ static VALUE s_new(int argc, VALUE *argv, VALUE klass)
 
 	fd = timerfd_create(clockid, flags);
 	if (fd < 0) {
-		if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
-			rb_gc();
+		if (rb_sp_gc_for_fd(errno))
 			fd = timerfd_create(clockid, flags);
-		}
 		if (fd < 0)
 			rb_sys_fail("timerfd_create");
 	}

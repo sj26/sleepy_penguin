@@ -90,4 +90,6 @@ void *rb_sp_gettlsbuf(size_t *size);
 # endif
 #endif
 
+int rb_sp_gc_for_fd(int err);
+
 #endif /* SLEEPY_PENGUIN_H */

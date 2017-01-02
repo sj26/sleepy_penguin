@@ -87,10 +87,8 @@ static VALUE s_new(VALUE klass, VALUE _flags)
 	VALUE rv;
 
 	if (fd < 0) {
-		if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
-			rb_gc();
+		if (rb_sp_gc_for_fd(errno))
 			fd = epoll_create1(flags);
-		}
 		if (fd < 0)
 			rb_sys_fail("epoll_create1");
 	}

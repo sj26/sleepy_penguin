@@ -156,3 +156,12 @@ int rb_sp_wait(rb_sp_waitfn waiter, VALUE obj, int *fd)
 	*fd = rb_sp_fileno(obj);
 	return rc;
 }
+
+int rb_sp_gc_for_fd(int err)
+{
+	if (err == EMFILE || err == ENFILE || err == ENOMEM) {
+		rb_gc();
+		return 1;
+	}
+	return 0;
+}
