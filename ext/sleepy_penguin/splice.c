@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <sys/uio.h>
-#include <limits.h>
 #include <unistd.h>
 
 static VALUE sym_EAGAIN;
@@ -145,13 +144,6 @@ void sleepy_penguin_init_splice(void)
 	 * frames from sockets.  Currently only used with splice.
 	 */
 	rb_define_const(mod, "F_MORE", UINT2NUM(SPLICE_F_MORE));
-
-	/*
-	 * The maximum size of an atomic write to a pipe
-	 * POSIX requires this to be at least 512 bytes.
-	 * Under Linux, this is 4096 bytes.
-	 */
-	rb_define_const(mod, "PIPE_BUF", UINT2NUM(PIPE_BUF));
 
 	/*
 	 * fcntl() command constant used to return the size of a pipe.

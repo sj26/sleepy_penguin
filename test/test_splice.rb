@@ -245,7 +245,6 @@ class TestSplice < Test::Unit::TestCase
   end
 
   def test_constants
-    assert SleepyPenguin::PIPE_BUF > 0
     %w(move nonblock more).each { |x|
       assert Integer === SleepyPenguin.const_get("F_#{x.upcase}")
     }
