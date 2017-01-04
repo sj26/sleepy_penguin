@@ -156,14 +156,14 @@ void sleepy_penguin_init_splice(void)
 	/*
 	 * fcntl() command constant used to return the size of a pipe.
 	 * This constant is only defined when running Linux 2.6.35
-	 * or later.  For convenience, use IO#pipe_size instead.
+	 * or later.
 	 */
 	rb_define_const(mod, "F_GETPIPE_SZ", UINT2NUM(F_GETPIPE_SZ));
 
 	/*
 	 * fcntl() command constant used to set the size of a pipe.
 	 * This constant is only defined when running Linux 2.6.35
-	 * or later.  For convenience, use IO#pipe_size= instead.
+	 * or later.
 	 */
 	rb_define_const(mod, "F_SETPIPE_SZ", UINT2NUM(F_SETPIPE_SZ));
 
