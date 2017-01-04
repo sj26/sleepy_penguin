@@ -4,9 +4,12 @@
 
 #ifndef HAVE_COPY_FILE_RANGE
 #  include <sys/syscall.h>
-#  if !defined(__NR_copy_file_range) && \
-	(defined(__x86_64__) || defined(__i386__))
-#    define __NR_copy_file_range 285
+#  if !defined(__NR_copy_file_range)
+#    if defined(__x86_64__)
+#      define __NR_copy_file_range 326
+#    elif defined(__i386__)
+#      define __NR_copy_file_range 377
+#    endif /* supported arches */
 #  endif /* __NR_copy_file_range */
 #endif
 
