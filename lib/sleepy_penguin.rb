@@ -16,6 +16,7 @@ if defined?(SleepyPenguin::Inotify) &&
   end
 end
 
-if SleepyPenguin.respond_to?(:__splice) || SleepyPenguin.respond_to?(:__tee)
-  require_relative 'sleepy_penguin/splice'
+module SleepyPenguin
+  require_relative 'sleepy_penguin/splice' if respond_to?(:__splice)
+  require_relative 'sleepy_penguin/cfr' if respond_to?(:__cfr)
 end

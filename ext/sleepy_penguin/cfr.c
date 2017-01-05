@@ -34,38 +34,37 @@ static void *nogvl_cfr(void *ptr)
 				a->fd_out, a->off_out, a->len, a->flags);
 }
 
-static VALUE rb_cfr(int argc, VALUE *argv, VALUE mod)
+/* :nodoc: */
+static VALUE rb_sp_cfr(VALUE mod, VALUE io_in, VALUE off_in,
+			VALUE io_out, VALUE off_out,
+			VALUE len, VALUE flags)
 {
-	off_t i, o;
-	VALUE io_in, off_in, io_out, off_out, len, flags;
-	ssize_t bytes;
+	off_t i = 0, o = 0;
 	struct copy_args a;
-
-	rb_scan_args(argc, argv, "51",
-	             &io_in, &off_in, &io_out, &off_out, &len, &flags);
+	ssize_t bytes;
 
 	a.off_in = NIL_P(off_in) ? NULL : (i = NUM2OFFT(off_in), &i);
 	a.off_out = NIL_P(off_out) ? NULL : (o = NUM2OFFT(off_out), &o);
 	a.len = NUM2SIZET(len);
-	a.flags = NIL_P(flags) ? 0 : NUM2UINT(flags);
+	a.flags = NUM2UINT(flags);
 
-again:
-	a.fd_in = rb_sp_fileno(io_in);
-	a.fd_out = rb_sp_fileno(io_out);
-	bytes = (ssize_t)IO_RUN(nogvl_cfr, &a);
-	if (bytes < 0) {
-		if (errno == EINTR)
-			goto again;
-		rb_sys_fail("copy_file_range");
-	} else if (bytes == 0) {
-		rb_eof_error();
+	for (;;) {
+		a.fd_in = rb_sp_fileno(io_in);
+		a.fd_out = rb_sp_fileno(io_out);
+		bytes = (ssize_t)IO_RUN(nogvl_cfr, &a);
+		if (bytes < 0) {
+			switch (errno) {
+			case EINTR: continue;
+			default: rb_sys_fail("copy_file_range");
+			}
+		}
+		return SSIZET2NUM(bytes);
 	}
-	return SSIZET2NUM(bytes);
 }
 
 void sleepy_penguin_init_cfr(void)
 {
 	VALUE mod = rb_define_module("SleepyPenguin");
 
-	rb_define_singleton_method(mod, "copy_file_range", rb_cfr, -1);
+	rb_define_singleton_method(mod, "__cfr", rb_sp_cfr, 6);
 }
