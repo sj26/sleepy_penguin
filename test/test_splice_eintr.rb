@@ -1,11 +1,8 @@
 # -*- encoding: binary -*-
-require 'test/unit'
+require_relative 'helper'
 require 'tempfile'
 require 'socket'
-require 'sleepy_penguin'
 require 'timeout'
-$-w = true
-Thread.abort_on_exception = true
 
 class Test_Splice_EINTR < Test::Unit::TestCase
   def setup

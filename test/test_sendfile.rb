@@ -1,9 +1,7 @@
 # -*- encoding: binary -*-
-require 'test/unit'
+require_relative 'helper'
 require 'tempfile'
 require 'socket'
-$-w = true
-require 'sleepy_penguin'
 
 class TestSendfile < Test::Unit::TestCase
   def test_linux_sendfile

@@ -1,8 +1,6 @@
 # -*- encoding: binary -*-
-require 'test/unit'
+require_relative 'helper'
 require 'tempfile'
-$-w = true
-require 'sleepy_penguin'
 
 class TestCfr < Test::Unit::TestCase
   def test_copy_file_range

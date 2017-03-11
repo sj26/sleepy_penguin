@@ -1,9 +1,6 @@
-require './test/helper'
-$-w = true
-Thread.abort_on_exception = true
-require 'sleepy_penguin'
+require_relative 'helper'
 
-class TestKqueueIO < Testcase
+class TestKqueueIO < Test::Unit::TestCase
   include SleepyPenguin
 
   def setup

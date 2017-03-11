@@ -1,12 +1,9 @@
-require './test/helper'
+require_relative 'helper'
 require 'fcntl'
 require 'socket'
 require 'thread'
-$-w = true
-Thread.abort_on_exception = true
-require 'sleepy_penguin'
 
-class TestEpollIO < Testcase
+class TestEpollIO < Test::Unit::TestCase
   include SleepyPenguin
 
   def setup

@@ -1,9 +1,7 @@
-require './test/helper'
-$-w = true
-Thread.abort_on_exception = true
+require_relative 'helper'
 require 'sleepy_penguin/sp'
 
-class TestConstants < Testcase
+class TestConstants < Test::Unit::TestCase
   def test_constants
     assert_equal SleepyPenguin::SLEEPY_PENGUIN_VERSION,
                  SP::SLEEPY_PENGUIN_VERSION

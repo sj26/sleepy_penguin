@@ -1,11 +1,9 @@
 # -*- encoding: binary -*-
-require 'test/unit'
+require_relative 'helper'
 require 'tempfile'
 require 'socket'
 require 'io/nonblock'
 require 'timeout'
-$-w = true
-require 'sleepy_penguin'
 
 class TestSplice < Test::Unit::TestCase
 

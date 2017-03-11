@@ -1,11 +1,9 @@
-require './test/helper'
+require_relative 'helper'
 require 'fcntl'
 require 'tempfile'
 require 'set'
-$-w = true
-require 'sleepy_penguin'
 
-class TestInotify < Testcase
+class TestInotify < Test::Unit::TestCase
   include SleepyPenguin
   attr_reader :ino
 

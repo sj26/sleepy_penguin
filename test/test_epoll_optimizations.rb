@@ -1,4 +1,4 @@
-require './test/helper'
+require_relative 'helper'
 begin
   require 'strace'
 rescue LoadError
@@ -7,7 +7,7 @@ $-w = true
 
 require 'sleepy_penguin'
 
-class TestEpollOptimizations < Testcase
+class TestEpollOptimizations < Test::Unit::TestCase
   include SleepyPenguin
   IO_PURGATORY = []
 
