@@ -2,17 +2,6 @@
 #include "sp_copy.h"
 #include <unistd.h>
 
-#ifndef HAVE_COPY_FILE_RANGE
-#  include <sys/syscall.h>
-#  if !defined(__NR_copy_file_range)
-#    if defined(__x86_64__)
-#      define __NR_copy_file_range 326
-#    elif defined(__i386__)
-#      define __NR_copy_file_range 377
-#    endif /* supported arches */
-#  endif /* __NR_copy_file_range */
-#endif
-
 #ifdef __NR_copy_file_range
 static ssize_t my_cfr(int fd_in, off_t *off_in, int fd_out, off_t *off_out,
 		       size_t len, unsigned int flags)
@@ -26,6 +15,8 @@ static ssize_t my_cfr(int fd_in, off_t *off_in, int fd_out, off_t *off_out,
 		my_cfr((fd_in),(off_in),(fd_out),(off_out),(len),(flags))
 #endif
 
+#if defined(HAVE_COPY_FILE_RANGE) || \
+    (defined(__linux__) && defined(__NR_copy_file_range))
 static void *nogvl_cfr(void *ptr)
 {
 	struct copy_args *a = ptr;
@@ -68,3 +59,4 @@ void sleepy_penguin_init_cfr(void)
 
 	rb_define_singleton_method(mod, "__cfr", rb_sp_cfr, 6);
 }
+#endif /* !HAVE_COPY_FILE_RANGE */

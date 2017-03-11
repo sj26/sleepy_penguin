@@ -249,4 +249,4 @@ class TestSplice < Test::Unit::TestCase
       assert Integer === SleepyPenguin.const_get("F_#{x.upcase}")
     }
   end
-end
+end if SleepyPenguin.respond_to?(:splice)

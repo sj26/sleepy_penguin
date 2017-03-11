@@ -52,8 +52,20 @@ void sleepy_penguin_init_signalfd(void);
 #  define sleepy_penguin_init_signalfd() for(;0;)
 #endif
 
+#ifdef HAVE_SPLICE
 void sleepy_penguin_init_splice(void);
+#else
+#  define sleepy_penguin_init_splice() for(;0;)
+#endif
+
+#if defined(HAVE_COPY_FILE_RANGE) || \
+    (defined(__linux__) && defined(__NR_copy_file_range))
 void sleepy_penguin_init_cfr(void);
+#else
+#  define sleepy_penguin_init_cfr() for (;0;)
+#endif
+
+/* everyone */
 void sleepy_penguin_init_sendfile(void);
 
 static size_t l1_cache_line_size_detect(void)

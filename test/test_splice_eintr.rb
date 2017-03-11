@@ -31,4 +31,4 @@ class Test_Splice_EINTR < Test::Unit::TestCase
     assert_equal 2, nr
     assert_equal 1, @usr1
   end
-end if defined?(RUBY_ENGINE)
+end if SleepyPenguin.respond_to?(:splice)
