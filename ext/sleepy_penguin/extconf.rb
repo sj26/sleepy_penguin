@@ -6,6 +6,7 @@ if have_header('sys/event.h')
 end
 have_header('sys/mount.h')
 have_header('sys/eventfd.h')
+have_header('sys/sendfile.h')
 
 # it's impossible to use signalfd reliably with Ruby since Ruby currently
 # manages # (and overrides) all signal handling

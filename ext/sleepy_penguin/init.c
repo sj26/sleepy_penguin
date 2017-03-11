@@ -54,6 +54,7 @@ void sleepy_penguin_init_signalfd(void);
 
 void sleepy_penguin_init_splice(void);
 void sleepy_penguin_init_cfr(void);
+void sleepy_penguin_init_sendfile(void);
 
 static size_t l1_cache_line_size_detect(void)
 {
@@ -132,4 +133,5 @@ void Init_sleepy_penguin_ext(void)
 	sleepy_penguin_init_signalfd();
 	sleepy_penguin_init_splice();
 	sleepy_penguin_init_cfr();
+	sleepy_penguin_init_sendfile();
 }
