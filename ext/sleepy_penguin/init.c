@@ -11,8 +11,15 @@
 #define L1_CACHE_LINE_MAX 128 /* largest I've seen (Pentium 4) */
 size_t rb_sp_l1_cache_line_size;
 static pthread_key_t rb_sp_key;
+enum rb_sp_tls_buf_type {
+	RB_SP_TLS_INUSE = -1,
+	RB_SP_TLS_READY = 0,
+	RB_SP_TLS_MALLOCED = 1
+};
+
 struct rb_sp_tlsbuf {
-	size_t capa;
+	uint32_t capa;
+	enum rb_sp_tls_buf_type buf_type;
 	unsigned char ptr[FLEX_ARRAY];
 };
 
@@ -89,12 +96,36 @@ static void sp_once(void)
 	}
 }
 
+static struct rb_sp_tlsbuf *alloc_tlsbuf(size_t size)
+{
+	size_t bytes = size + sizeof(struct rb_sp_tlsbuf);
+	struct rb_sp_tlsbuf *buf;
+	void *ptr;
+	int err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, bytes);
+
+	if (err) {
+		errno = err;
+		rb_memerror(); /* fatal */
+	}
+
+	buf = ptr;
+	buf->capa = size;
+
+	return buf;
+}
+
 void *rb_sp_gettlsbuf(size_t *size)
 {
 	struct rb_sp_tlsbuf *buf = pthread_getspecific(rb_sp_key);
-	void *ptr;
 	int err;
-	size_t bytes;
+
+	assert(buf ? buf->buf_type != RB_SP_TLS_MALLOCED : 1);
+
+	if (buf && buf->buf_type != RB_SP_TLS_READY) {
+		buf = alloc_tlsbuf(*size);
+		buf->buf_type = RB_SP_TLS_MALLOCED;
+		return buf->ptr;
+	}
 
 	if (buf && buf->capa >= *size) {
 		*size = buf->capa;
@@ -102,15 +133,7 @@ void *rb_sp_gettlsbuf(size_t *size)
 	}
 
 	free(buf);
-	bytes = *size + sizeof(struct rb_sp_tlsbuf);
-	err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, bytes);
-	if (err) {
-		errno = err;
-		rb_memerror(); /* fatal */
-	}
-
-	buf = ptr;
-	buf->capa = *size;
+	buf = alloc_tlsbuf(*size);
 	err = pthread_setspecific(rb_sp_key, buf);
 	if (err != 0) {
 		free(buf);
@@ -118,7 +141,35 @@ void *rb_sp_gettlsbuf(size_t *size)
 		rb_sys_fail("BUG: pthread_setspecific");
 	}
 out:
+	buf->buf_type = RB_SP_TLS_INUSE;
 	return buf->ptr;
+}
+
+#define container_of(ptr, type, member) \
+	(type *)((uintptr_t)(ptr) - offsetof(type, member))
+
+VALUE rb_sp_puttlsbuf(VALUE p)
+{
+	struct rb_sp_tlsbuf *tls = pthread_getspecific(rb_sp_key);
+	void *ptr = (void *)p;
+	struct rb_sp_tlsbuf *buf;
+
+	if (!ptr)
+		return Qfalse;
+
+	buf = container_of(ptr, struct rb_sp_tlsbuf, ptr);
+
+	switch (buf->buf_type) {
+	case RB_SP_TLS_INUSE:
+		assert(tls == buf && "rb_sp_puttlsbuf mismatch");
+		buf->buf_type = RB_SP_TLS_READY;
+		break;
+	case RB_SP_TLS_READY:
+		assert(0 && "rb_sp_gettlsbuf not called");
+	case RB_SP_TLS_MALLOCED:
+		free(buf);
+	}
+	return Qfalse;
 }
 
 void Init_sleepy_penguin_ext(void)

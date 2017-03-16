@@ -43,6 +43,7 @@ static VALUE mEv, mEvFilt, mNote, mVQ;
 
 struct kq_per_thread {
 	VALUE io;
+	VALUE changelist;
 	int fd;
 	int nchanges;
 	int nevents;
@@ -72,7 +73,7 @@ static int kq_fd_check(struct kq_per_thread *kpt)
 	return 1;
 }
 
-static struct kq_per_thread *kpt_get(VALUE self, int nchanges, int nevents)
+static struct kq_per_thread *kpt_get(int nchanges, int nevents)
 {
 	struct kq_per_thread *kpt;
 	size_t size;
@@ -89,8 +90,6 @@ static struct kq_per_thread *kpt_get(VALUE self, int nchanges, int nevents)
 	kpt->capa = max;
 	kpt->nchanges = nchanges;
 	kpt->nevents = nevents;
-	kpt->io = self;
-	kpt->fd = rb_sp_fileno(kpt->io);
 
 	return kpt;
 }
@@ -203,10 +202,15 @@ static VALUE nogvl_kevent(void *args)
 	return (VALUE)nevents;
 }
 
+static void changelist_prepare(struct kevent *, VALUE);
+
 static VALUE do_kevent(struct kq_per_thread *kpt)
 {
 	long nevents;
 	struct timespec expire_at;
+
+	if (kpt->nchanges)
+		changelist_prepare(kpt->events, kpt->changelist);
 
 	if (kpt->ts) {
 		clock_gettime(CLOCK_MONOTONIC, &expire_at);
@@ -333,7 +337,7 @@ static void changelist_prepare(struct kevent *events, VALUE changelist)
  */
 static VALUE sp_kevent(int argc, VALUE *argv, VALUE self)
 {
-	struct timespec ts;
+	struct timespec ts, *t;
 	VALUE changelist, events, timeout;
 	struct kq_per_thread *kpt;
 	int nchanges, nevents;
@@ -362,12 +366,14 @@ static VALUE sp_kevent(int argc, VALUE *argv, VALUE self)
 		nevents = 0;
 	}
 
-	kpt = kpt_get(self, nchanges, nevents);
-	kpt->ts = NIL_P(timeout) ? NULL : value2timespec(&ts, timeout);
-	if (nchanges)
-		changelist_prepare(kpt->events, changelist);
+	t = NIL_P(timeout) ? NULL : value2timespec(&ts, timeout);
+	kpt = kpt_get(nchanges, nevents);
+	kpt->ts = t;
+	kpt->changelist = changelist;
+	kpt->io = self;
+	kpt->fd = rb_sp_fileno(kpt->io);
 
-	return do_kevent(kpt);
+	return rb_ensure(do_kevent, (VALUE)kpt, rb_sp_puttlsbuf, (VALUE)kpt);
 }
 
 /* initialize constants in the SleepyPenguin::Ev namespace */

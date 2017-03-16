@@ -68,5 +68,37 @@ class TestKqueue < Test::Unit::TestCase
   ensure
     kq.close
   end
+
+  def test_epoll_nest
+    kq1 = Kqueue.new
+    kq2 = Kqueue.new
+    r1, w1 = IO.pipe
+    r2, w2 = IO.pipe
+    w1.write '.'
+    w2.write '.'
+    kq1.kevent([
+       Kevent[r1.fileno, EvFilt::READ, Ev::ADD, 0, 0, r1],
+       Kevent[w1.fileno, EvFilt::WRITE, Ev::ADD, 0, 0, w1]
+    ])
+    kq2.kevent([
+       Kevent[r2.fileno, EvFilt::READ, Ev::ADD, 0, 0, r2],
+       Kevent[w2.fileno, EvFilt::WRITE, Ev::ADD, 0, 0, w2]
+    ])
+    outer = []
+    inner = []
+    nr = 0
+    kq1.kevent(nil, 2) do |kev1|
+      outer << kev1.udata
+      kq2.kevent(nil, 2) do |kev2|
+        (inner[nr] ||= []) << kev2.udata
+      end
+      nr += 1
+    end
+    assert_equal [ r1, w1 ].sort_by(&:fileno), outer.sort_by(&:fileno)
+    exp = [ r2, w2 ].sort_by(&:fileno)
+    assert_equal [ exp, exp ], inner.map { |x| x.sort_by(&:fileno) }
+  ensure
+    [ r1, w1, r2, w2, kq1, kq2 ].compact.each(&:close)
+  end
 end if defined?(SleepyPenguin::Kqueue) &&
        IO.instance_methods.include?(:autoclose=)

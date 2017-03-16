@@ -78,6 +78,7 @@ static inline VALUE fake_blocking_region(VALUE (*fn)(void *), void *data)
 typedef int rb_sp_waitfn(int fd);
 int rb_sp_wait(rb_sp_waitfn waiter, VALUE obj, int *fd);
 void *rb_sp_gettlsbuf(size_t *size);
+VALUE rb_sp_puttlsbuf(VALUE);
 
 /* Flexible array elements are standard in C99 */
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)

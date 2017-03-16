@@ -49,7 +49,7 @@ static int ep_fd_check(struct ep_per_thread *ept)
 	return 1;
 }
 
-static struct ep_per_thread *ept_get(VALUE self, int maxevents)
+static struct ep_per_thread *ept_get(int maxevents)
 {
 	struct ep_per_thread *ept;
 	size_t size;
@@ -66,8 +66,6 @@ static struct ep_per_thread *ept_get(VALUE self, int maxevents)
 	ept = rb_sp_gettlsbuf(&size);
 	ept->capa = maxevents;
 	ept->maxevents = maxevents;
-	ept->io = self;
-	ept->fd = rb_sp_fileno(ept->io);
 
 	return ept;
 }
@@ -177,6 +175,7 @@ static VALUE real_epwait(struct ep_per_thread *ept)
 	long n;
 	uint64_t expire_at = ept->timeout > 0 ? now_ms() + ept->timeout : 0;
 
+	ept->fd = rb_sp_fileno(ept->io);
 	do {
 		n = (long)rb_sp_fd_region(nogvl_wait, ept, ept->fd);
 	} while (n < 0 && epoll_resume_p(expire_at, ept));
@@ -200,14 +199,17 @@ static VALUE epwait(int argc, VALUE *argv, VALUE self)
 {
 	VALUE timeout, maxevents;
 	struct ep_per_thread *ept;
+	int t;
 
 	rb_need_block();
 	rb_scan_args(argc, argv, "02", &maxevents, &timeout);
+	t = NIL_P(timeout) ? -1 : NUM2INT(timeout);
 
-	ept = ept_get(self, NIL_P(maxevents) ? 64 : NUM2INT(maxevents));
-	ept->timeout = NIL_P(timeout) ? -1 : NUM2INT(timeout);
+	ept = ept_get(NIL_P(maxevents) ? 64 : NUM2INT(maxevents));
+	ept->timeout = t;
+	ept->io = self;
 
-	return real_epwait(ept);
+	return rb_ensure(real_epwait, (VALUE)ept, rb_sp_puttlsbuf, (VALUE)ept);
 }
 
 /* :nodoc: */

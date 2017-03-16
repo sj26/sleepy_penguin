@@ -534,4 +534,30 @@ class TestEpoll < Test::Unit::TestCase
     end
     @ep.wait(1) { |flags, io| assert_equal(first[0], io) }
   end
+
+  def test_epoll_nest
+    ep2 = Epoll.new
+    r, w = IO.pipe
+    @ep.add(@rd, :IN)
+    @ep.add(@wr, :OUT)
+    ep2.add(r, :IN)
+    ep2.add(w, :OUT)
+    w.write('.')
+    @wr.write('.')
+    outer = []
+    inner = []
+    nr = 0
+    @ep.wait(2) do |_, io|
+      outer << io
+      ep2.wait(2) do |_, io2|
+        (inner[nr] ||= []) << io2
+      end
+      nr += 1
+    end
+    assert_equal [ @rd, @wr ].sort_by(&:fileno), outer.sort_by(&:fileno)
+    exp = [ r, w ].sort_by(&:fileno)
+    assert_equal [ exp, exp ], inner.map { |x| x.sort_by(&:fileno) }
+  ensure
+    [ r, w, ep2 ].compact.each(&:close)
+  end
 end if defined?(SleepyPenguin::Epoll)

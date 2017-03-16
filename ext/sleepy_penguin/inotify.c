@@ -134,8 +134,11 @@ static VALUE event_new(struct inotify_event *e)
 }
 
 struct inread_args {
+	VALUE self;
 	int fd;
+	int nonblock_p;
 	size_t size;
+	VALUE tmp;
 	void *buf;
 };
 
@@ -158,6 +161,7 @@ static void resize_internal_buffer(struct inread_args *args)
 
 	if (newlen > 0) {
 		args->size = (size_t)newlen;
+		rb_sp_puttlsbuf((VALUE)args->buf);
 		args->buf = rb_sp_gettlsbuf(&args->size);
 	}
 
@@ -167,6 +171,44 @@ static void resize_internal_buffer(struct inread_args *args)
 	rb_raise(rb_eRuntimeError,
 		"ioctl(inotify,FIONREAD) returned negative length: %d",
 		newlen);
+}
+
+static VALUE do_take(VALUE p)
+{
+	struct inread_args *args = (struct inread_args *)p;
+	VALUE rv = Qnil;
+	struct inotify_event *e, *end;
+
+	args->buf = rb_sp_gettlsbuf(&args->size);
+	do {
+		ssize_t r = (ssize_t)rb_sp_fd_region(inread, args, args->fd);
+		if (r == 0 /* Linux < 2.6.21 */
+		    ||
+		    (r < 0 && errno == EINVAL) /* Linux >= 2.6.21 */
+		   ) {
+			resize_internal_buffer(args);
+		} else if (r < 0) {
+			if (errno == EAGAIN && args->nonblock_p)
+				return Qnil;
+			if (!rb_sp_wait(rb_io_wait_readable, args->self,
+					&args->fd))
+				rb_sys_fail("read(inotify)");
+		} else {
+			/* buffer in userspace to minimize read() calls */
+			end = (struct inotify_event *)((char *)args->buf + r);
+			for (e = args->buf; e < end; ) {
+				VALUE event = event_new(e);
+				if (NIL_P(rv))
+					rv = event;
+				else
+					rb_ary_push(args->tmp, event);
+				e = (struct inotify_event *)
+				    ((char *)e + event_len(e));
+			}
+		}
+	} while (NIL_P(rv));
+
+	return rv;
 }
 
 /*
@@ -179,53 +221,27 @@ static void resize_internal_buffer(struct inread_args *args)
 static VALUE take(int argc, VALUE *argv, VALUE self)
 {
 	struct inread_args args;
-	VALUE tmp = rb_ivar_get(self, id_inotify_tmp);
-	struct inotify_event *e, *end;
-	ssize_t r;
-	VALUE rv = Qnil;
 	VALUE nonblock;
 
-	if (RARRAY_LEN(tmp) > 0)
-		return rb_ary_shift(tmp);
+	args.tmp = rb_ivar_get(self, id_inotify_tmp);
+	if (RARRAY_LEN(args.tmp) > 0)
+		return rb_ary_shift(args.tmp);
 
 	rb_scan_args(argc, argv, "01", &nonblock);
 
+	args.self = self;
 	args.fd = rb_sp_fileno(self);
 	args.size = 128;
-	args.buf = rb_sp_gettlsbuf(&args.size);
+	args.nonblock_p = RTEST(nonblock);
 
-	if (RTEST(nonblock))
+	if (args.nonblock_p)
 		rb_sp_set_nonblock(args.fd);
 	else
 		blocking_io_prepare(args.fd);
-	do {
-		r = (ssize_t)rb_sp_fd_region(inread, &args, args.fd);
-		if (r == 0 /* Linux < 2.6.21 */
-		    ||
-		    (r < 0 && errno == EINVAL) /* Linux >= 2.6.21 */
-		   ) {
-			resize_internal_buffer(&args);
-		} else if (r < 0) {
-			if (errno == EAGAIN && RTEST(nonblock))
-				return Qnil;
-			if (!rb_sp_wait(rb_io_wait_readable, self, &args.fd))
-				rb_sys_fail("read(inotify)");
-		} else {
-			/* buffer in userspace to minimize read() calls */
-			end = (struct inotify_event *)((char *)args.buf + r);
-			for (e = args.buf; e < end; ) {
-				VALUE event = event_new(e);
-				if (NIL_P(rv))
-					rv = event;
-				else
-					rb_ary_push(tmp, event);
-				e = (struct inotify_event *)
-				    ((char *)e + event_len(e));
-			}
-		}
-	} while (NIL_P(rv));
 
-	return rv;
+	args.buf = 0;
+	return rb_ensure(do_take, (VALUE)&args,
+			 rb_sp_puttlsbuf, (VALUE)args.buf);
 }
 
 /*
