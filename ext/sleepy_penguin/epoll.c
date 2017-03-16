@@ -329,9 +329,6 @@ void sleepy_penguin_init_epoll(void)
 
 	id_for_fd = rb_intern("for_fd");
 
-	if (RB_SP_GREEN_THREAD)
-		rb_require("sleepy_penguin/epoll/io");
-
 	/* the high-level interface is implemented in Ruby: */
 	rb_require("sleepy_penguin/epoll");
 }

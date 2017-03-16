@@ -82,7 +82,9 @@ static VALUE incr(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &value, &nonblock);
 	x.fd = rb_sp_fileno(self);
-	RTEST(nonblock) ? rb_sp_set_nonblock(x.fd) : blocking_io_prepare(x.fd);
+	if (RTEST(nonblock))
+		rb_sp_set_nonblock(x.fd);
+
 	x.val = (uint64_t)NUM2ULL(value);
 retry:
 	w = (ssize_t)rb_sp_fd_region(efd_write, &x, x.fd);
@@ -119,7 +121,8 @@ static VALUE getvalue(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "01", &nonblock);
 	x.fd = rb_sp_fileno(self);
-	RTEST(nonblock) ? rb_sp_set_nonblock(x.fd) : blocking_io_prepare(x.fd);
+	if (RTEST(nonblock))
+		rb_sp_set_nonblock(x.fd);
 retry:
 	w = (ssize_t)rb_sp_fd_region(efd_read, &x, x.fd);
 	if (w < 0) {

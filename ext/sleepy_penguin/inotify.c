@@ -236,8 +236,6 @@ static VALUE take(int argc, VALUE *argv, VALUE self)
 
 	if (args.nonblock_p)
 		rb_sp_set_nonblock(args.fd);
-	else
-		blocking_io_prepare(args.fd);
 
 	args.buf = 0;
 	return rb_ensure(do_take, (VALUE)&args,

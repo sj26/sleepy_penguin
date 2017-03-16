@@ -120,8 +120,6 @@ static VALUE expirations(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "01", &nonblock);
 	if (RTEST(nonblock))
 		rb_sp_set_nonblock(fd);
-	else
-		blocking_io_prepare(fd);
 retry:
 	r = (ssize_t)rb_sp_fd_region(tfd_read, &buf, fd);
 	if (r < 0) {
