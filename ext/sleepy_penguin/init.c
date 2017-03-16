@@ -113,6 +113,7 @@ void *rb_sp_gettlsbuf(size_t *size)
 	buf->capa = *size;
 	err = pthread_setspecific(rb_sp_key, buf);
 	if (err != 0) {
+		free(buf);
 		errno = err;
 		rb_sys_fail("BUG: pthread_setspecific");
 	}
