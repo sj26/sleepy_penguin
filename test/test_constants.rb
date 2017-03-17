@@ -1,5 +1,5 @@
-require_relative 'helper'
 require 'sleepy_penguin/sp'
+require_relative 'helper'
 
 class TestConstants < Test::Unit::TestCase
   def test_constants

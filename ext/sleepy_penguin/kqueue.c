@@ -657,10 +657,9 @@ void sleepy_penguin_init_kqueue(void)
 
 	id_for_fd = rb_intern("for_fd");
 
-	/* the high-level interface is implemented in Ruby: */
-	rb_require("sleepy_penguin/kqueue");
-
-	/* Kevent helper struct */
-	rb_require("sleepy_penguin/kevent");
+	/*
+         * the high-level interface is implemented in Ruby
+         * see lib/sleepy_penguin/kevent.rb
+         */
 }
 #endif /* HAVE_SYS_EVENT_H */

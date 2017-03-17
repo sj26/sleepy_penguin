@@ -19,6 +19,8 @@ end
 module SleepyPenguin
   require_relative 'sleepy_penguin/splice' if respond_to?(:__splice)
   require_relative 'sleepy_penguin/cfr' if respond_to?(:__cfr)
+  require_relative 'sleepy_penguin/epoll' if const_defined?(:Epoll)
+  require_relative 'sleepy_penguin/kqueue' if const_defined?(:Kqueue)
 
   # Copies +len+ bytes from +src+ to +dst+, where +src+ refers to
   # an open, mmap(2)-able File and +dst+ refers to a Socket.

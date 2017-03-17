@@ -329,7 +329,9 @@ void sleepy_penguin_init_epoll(void)
 
 	id_for_fd = rb_intern("for_fd");
 
-	/* the high-level interface is implemented in Ruby: */
-	rb_require("sleepy_penguin/epoll");
+	/*
+	 * the high-level interface is implemented in Ruby,
+	 * see lib/sleepy_penguin/epoll.rb
+	 */
 }
 #endif /* HAVE_SYS_EPOLL_H */

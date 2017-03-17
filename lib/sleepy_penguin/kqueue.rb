@@ -1,4 +1,5 @@
 require 'thread'
+require_relative 'kevent'
 
 # The high-level Kqueue interface.  This provides fork-safety under Ruby 1.9
 # and later (but not Ruby 1.8).
