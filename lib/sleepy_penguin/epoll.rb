@@ -166,7 +166,7 @@ class SleepyPenguin::Epoll
         begin
           @io.epoll_ctl(CTL_MOD, io, events)
         rescue Errno::ENOENT
-          warn "epoll event cache failed (mod -> add)"
+          warn "epoll event cache failed (mod -> add)\n"
           @io.epoll_ctl(CTL_ADD, io, events)
           @marks[fd] = io
         end
@@ -174,7 +174,7 @@ class SleepyPenguin::Epoll
         begin
           @io.epoll_ctl(CTL_ADD, io, events)
         rescue Errno::EEXIST
-          warn "epoll event cache failed (add -> mod)"
+          warn "epoll event cache failed (add -> mod)\n"
           @io.epoll_ctl(CTL_MOD, io, events)
         end
         @marks[fd] = io
