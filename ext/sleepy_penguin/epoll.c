@@ -306,6 +306,17 @@ void sleepy_penguin_init_epoll(void)
 	rb_define_const(cEpoll, "WAKEUP", UINT2NUM(EPOLLWAKEUP));
 #endif
 
+#ifdef EPOLLEXCLUSIVE
+	/*
+	 * Sets an exclusive wakeup mode for the epoll object
+	 * that is being attached to the target IO.  This
+	 * avoids thundering herd scenarios when the same
+	 * target IO is shared among multiple epoll objects.
+	 * Available since Linux 4.5
+	 */
+	rb_define_const(cEpoll, "EXCLUSIVE", UINT2NUM(EPOLLEXCLUSIVE));
+#endif
+
 	/* watch for urgent read(2) data */
 	rb_define_const(cEpoll, "PRI", UINT2NUM(EPOLLPRI));
 
