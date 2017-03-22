@@ -18,24 +18,7 @@ typedef VALUE (*my_blocking_fn_t)(void*);
 	rb_thread_blocking_region((my_blocking_fn_t)(fn),(a),(ubf),(b))
 
 #else /* Ruby 1.8 */
-/* partial emulation of the 1.9 rb_thread_blocking_region under 1.8 */
-#  include <rubysig.h>
-#  define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
-typedef void rb_unblock_function_t(void *);
-typedef void * rb_blocking_function_t(void *);
-static void * WITHOUT_GVL(rb_blocking_function_t *func, void *data1,
-			rb_unblock_function_t *ubf, void *data2)
-{
-	void *rv;
-
-	assert(RUBY_UBF_IO == ubf && "RUBY_UBF_IO required for emulation");
-
-	TRAP_BEG;
-	rv = func(data1);
-	TRAP_END;
-
-	return rv;
-}
+#  error Ruby 1.8 not supported
 #endif /* ! HAVE_RB_THREAD_BLOCKING_REGION */
 
 #define IO_RUN(fn,data) WITHOUT_GVL((fn),(data),RUBY_UBF_IO,0)
