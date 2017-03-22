@@ -1,23 +1,21 @@
-ENV["VERSION"] or abort "VERSION= must be specified"
-manifest = File.readlines('.manifest').map! { |x| x.chomp! }
-require 'olddoc'
-extend Olddoc::Gemspec
-name, summary, title = readme_metadata
+manifest = File.exist?('.manifest') ?
+  IO.readlines('.manifest').map!(&:chomp!) : `git ls-files`.split("\n")
 
 Gem::Specification.new do |s|
   s.name = %q{sleepy_penguin}
-  s.version = ENV["VERSION"].dup
-  s.homepage = Olddoc.config['rdoc_url']
-  s.authors = ["#{name} hackers"]
-  s.description = readme_description
+  s.version = (ENV['VERSION'] || '3.4.1').dup
+  s.homepage = 'https://bogomips.org/sleepy_penguin/'
+  s.authors = ['sleepy_penguin hackers']
+  s.description = File.read('README').split("\n\n")[1]
   s.email = %q{sleepy-penguin@bogomips.org}
-  s.extra_rdoc_files = extra_rdoc_files(manifest)
   s.files = manifest
-  s.summary = summary
+  s.summary = 'Linux I/O events for Ruby'
   s.test_files = Dir['test/test_*.rb']
   s.extensions = %w(ext/sleepy_penguin/extconf.rb)
+  s.extra_rdoc_files = IO.readlines('.document').map!(&:chomp!).keep_if do |f|
+    File.exist?(f)
+  end
   s.add_development_dependency('test-unit', '~> 3.0')
-  s.add_development_dependency('olddoc', '~> 1.0')
   s.add_development_dependency('strace_me', '~> 1.0')
   s.required_ruby_version = '>= 2.0'
   s.licenses = %w(LGPL-2.1+)
