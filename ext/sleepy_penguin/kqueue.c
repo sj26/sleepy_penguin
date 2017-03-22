@@ -101,11 +101,10 @@ static struct kq_per_thread *kpt_get(int nchanges, int nevents)
  * Creates a new Kqueue::IO object.  This is a wrapper around the kqueue(2)
  * system call which creates a Ruby IO object around the kqueue descriptor.
  *
- * kqueue descriptors are automatically invalidated across fork, so care
- * must be taken when forking.
+ * kqueue descriptors are automatically invalidated by the OS across fork,
+ * so care must be taken when forking.
  * Setting IO#autoclose=false is recommended for applications which fork
- * after kqueue creation.  Ruby 1.8 does not have IO#autoclose=, so using
- * this class is not recommended under Ruby 1.8
+ * after kqueue creation.
  */
 static VALUE s_new(VALUE klass)
 {

@@ -100,5 +100,4 @@ class TestKqueue < Test::Unit::TestCase
   ensure
     [ r1, w1, r2, w2, kq1, kq2 ].compact.each(&:close)
   end
-end if defined?(SleepyPenguin::Kqueue) &&
-       IO.instance_methods.include?(:autoclose=)
+end if defined?(SleepyPenguin::Kqueue)

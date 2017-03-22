@@ -1,8 +1,8 @@
 require 'thread'
 require_relative 'kevent'
 
-# The high-level Kqueue interface.  This provides fork-safety under Ruby 1.9
-# and later (but not Ruby 1.8).
+# The high-level Kqueue interface.  This provides fork-safety; as
+# underlying kqueue descriptors are closed by the OS upon fork.
 # This also provides memory protection from bugs due to not storing an
 # external reference to an object, but still requires the user to store
 # their own object references.
@@ -34,10 +34,6 @@ class SleepyPenguin::Kqueue
 
   def __kq_check # :nodoc:
     return if @pid == $$ || @io.closed?
-    unless @io.respond_to?(:autoclose=)
-      raise RuntimeError,
-       "Kqueue is not safe to use without IO#autoclose=, upgrade to Ruby 1.9+"
-    end
 
     # kqueue has (strange) close-on-fork behavior
     objects = @copies.values
