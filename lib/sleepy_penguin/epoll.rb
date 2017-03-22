@@ -45,7 +45,7 @@ class SleepyPenguin::Epoll
     end
   end
 
-  # Calls epoll_wait(2) and yields Integer +events+ and IO objects watched
+  # Calls epoll_wait(2) and yields Integer +events+ and +IO+ objects watched
   # for.  +maxevents+ is the maximum number of events to process at once,
   # lower numbers may prevent starvation when used by epoll_wait in multiple
   # threads.  Larger +maxevents+ reduces syscall overhead for
@@ -62,7 +62,7 @@ class SleepyPenguin::Epoll
     end
 
     # we keep a snapshot of @marks around in case another thread closes
-    # the IO while it is being transferred to userspace.  We release mtx
+    # the io while it is being transferred to userspace.  We release mtx
     # so another thread may add events to us while we're sleeping.
     @io.epoll_wait(maxevents, timeout) { |events, io| yield(events, io) }
   ensure
@@ -87,7 +87,7 @@ class SleepyPenguin::Epoll
   # call-seq:
   #     ep.del(io) -> 0
   #
-  # Disables an IO object from being watched.
+  # Disables an +IO+ object from being watched.
   def del(io)
     fd = io.to_io.fileno
     @mtx.synchronize do
@@ -125,7 +125,7 @@ class SleepyPenguin::Epoll
   # call-seq:
   #     epoll.mod(io, flags) -> 0
   #
-  # Changes the watch for an existing IO object based on +events+.
+  # Changes the watch for an existing +IO+ object based on +events+.
   # Returns zero on success, will raise SystemError on failure.
   def mod(io, events)
     events = __event_flags(events)
@@ -214,8 +214,8 @@ class SleepyPenguin::Epoll
   # call-seq:
   #     ep.io_for(io) -> object
   #
-  # Returns the given IO object currently being watched for.  Different
-  # IO objects may internally refer to the same process file descriptor.
+  # Returns the given +IO+ object currently being watched for.  Different
+  # +IO+ objects may internally refer to the same process file descriptor.
   # Mostly used for debugging.
   def io_for(io)
     fd = __fileno(io)
@@ -244,9 +244,9 @@ class SleepyPenguin::Epoll
   # call-seq:
   #     epoll.include?(io) -> true or false
   #
-  # Returns whether or not a given IO is watched and prevented from being
+  # Returns whether or not a given +IO+ is watched and prevented from being
   # garbage-collected by the current Epoll object.  This may include
-  # closed IO objects.
+  # closed +IO+ objects.
   def include?(io)
     fd = __fileno(io)
     @mtx.synchronize do

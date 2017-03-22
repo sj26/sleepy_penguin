@@ -102,7 +102,7 @@ static VALUE s_new(VALUE klass, VALUE _flags)
  * Register, modify, or register a watch for a given +io+ for events.
  *
  * +op+ may be one of +EPOLL_CTL_ADD+, +EPOLL_CTL_MOD+, or +EPOLL_CTL_DEL+
- * +io+ is an IO object or one which proxies via the +to_io+ method.
+ * +io+ is an +IO+ object or one which proxies via the +to_io+ method.
  * +events+ is an integer mask of events to watch for.
  *
  * Returns nil on success.
@@ -187,7 +187,7 @@ static VALUE real_epwait(struct ep_per_thread *ept)
  * call-seq:
  *	ep_io.epoll_wait([maxevents[, timeout]]) { |events, io| ... }
  *
- * Calls epoll_wait(2) and yields Integer +events+ and IO objects watched
+ * Calls epoll_wait(2) and yields Integer +events+ and +IO+ objects watched
  * for.  +maxevents+ is the maximum number of events to process at once,
  * lower numbers may prevent starvation when used by epoll_wait in multiple
  * threads.  Larger +maxevents+ reduces syscall overhead for
@@ -251,7 +251,7 @@ void sleepy_penguin_init_epoll(void)
 	 *
 	 * The Epoll class provides high-level access to epoll(7)
 	 * functionality in the Linux 2.6 and later kernels.  It provides
-	 * fork and GC-safety for Ruby objects stored within the IO object
+	 * fork and GC-safety for Ruby objects stored within the +IO+ object
 	 * and may be passed as an argument to IO.select.
 	 */
 	cEpoll = rb_define_class_under(mSleepyPenguin, "Epoll", rb_cObject);
@@ -260,7 +260,7 @@ void sleepy_penguin_init_epoll(void)
 	 * Document-class: SleepyPenguin::Epoll::IO
 	 *
 	 * Epoll::IO is a low-level class.  It does not provide fork nor
-	 * GC-safety, so Ruby IO objects added via epoll_ctl must be retained
+	 * GC-safety, so Ruby +IO+ objects added via epoll_ctl must be retained
 	 * by the application until IO#close is called.
 	 */
 	cEpoll_IO = rb_define_class_under(cEpoll, "IO", rb_cIO);
@@ -271,13 +271,13 @@ void sleepy_penguin_init_epoll(void)
 
 	rb_define_method(cEpoll, "__event_flags", event_flags, 1);
 
-	/* registers an IO object via epoll_ctl */
+	/* registers a target +IO+ object via epoll_ctl */
 	rb_define_const(cEpoll, "CTL_ADD", INT2NUM(EPOLL_CTL_ADD));
 
-	/* unregisters an IO object via epoll_ctl */
+	/* unregisters a target +IO+ object via epoll_ctl */
 	rb_define_const(cEpoll, "CTL_DEL", INT2NUM(EPOLL_CTL_DEL));
 
-	/* modifies the registration of an IO object via epoll_ctl */
+	/* modifies the registration of a target +IO+ object via epoll_ctl */
 	rb_define_const(cEpoll, "CTL_MOD", INT2NUM(EPOLL_CTL_MOD));
 
 	/* specifies whether close-on-exec flag is set for Epoll.new */
@@ -309,9 +309,9 @@ void sleepy_penguin_init_epoll(void)
 #ifdef EPOLLEXCLUSIVE
 	/*
 	 * Sets an exclusive wakeup mode for the epoll object
-	 * that is being attached to the target IO.  This
+	 * that is being attached to the target +IO+.  This
 	 * avoids thundering herd scenarios when the same
-	 * target IO is shared among multiple epoll objects.
+	 * target +IO+ is shared among multiple epoll objects.
 	 * Available since Linux 4.5
 	 */
 	rb_define_const(cEpoll, "EXCLUSIVE", UINT2NUM(EPOLLEXCLUSIVE));
@@ -322,13 +322,13 @@ void sleepy_penguin_init_epoll(void)
 
 	/*
 	 * watch for errors, there is no need to specify this,
-	 * it is always monitored when an IO is watched
+	 * it is always monitored when an +IO+ is watched
 	 */
 	rb_define_const(cEpoll, "ERR", UINT2NUM(EPOLLERR));
 
 	/*
 	 * watch for hangups, there is no need to specify this,
-	 * it is always monitored when an IO is watched
+	 * it is always monitored when an +IO+ is watched
 	 */
 	rb_define_const(cEpoll, "HUP", UINT2NUM(EPOLLHUP));
 
