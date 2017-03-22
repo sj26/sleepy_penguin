@@ -52,6 +52,9 @@ class SleepyPenguin::Kqueue
   # Ruby GC, otherwise ObjectSpace._id2ref may return invalid objects.
   # Unlike the low-level Kqueue::IO#kevent, the block given yields only
   # a single Kevent struct, not a 6-element array.
+  #
+  # As of sleepy_penguin 3.5.0+, it is possible to nest #kevent
+  # calls within the same thread.
   def kevent(changelist = nil, *args)
     @mtx.synchronize { __kq_check }
     if changelist

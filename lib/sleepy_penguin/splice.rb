@@ -53,6 +53,8 @@ module SleepyPenguin
   #
   # See manpage for full documentation:
   # http://man7.org/linux/man-pages/man2/splice.2.html
+  #
+  # Support for this exists in sleepy_penguin 3.5.0+
   def self.splice(io_in, io_out, len, flags = 0,
                   off_in: nil, off_out: nil, exception: true)
     flags = __map_splice_flags(flags)
@@ -93,6 +95,8 @@ module SleepyPenguin
   #
   # See manpage for full documentation:
   # http://man7.org/linux/man-pages/man2/tee.2.html
+  #
+  # Support for this exists in sleepy_penguin 3.5.0+
   def self.tee(io_in, io_out, len, flags = 0, exception: true)
     flags = __map_splice_flags(flags)
     ret = __tee(io_in, io_out, len, flags)

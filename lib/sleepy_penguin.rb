@@ -37,6 +37,8 @@ module SleepyPenguin
   #
   # Newer OSes may be more flexible in whether or not +dst+ or +src+
   # is a regular file or socket, respectively.
+  #
+  # This method was added in sleepy_penguin 3.5.0.
   def self.linux_sendfile(dst, src, len, offset: nil)
     __lsf(dst, src, offset, len)
   end

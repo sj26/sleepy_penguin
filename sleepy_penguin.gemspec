@@ -3,7 +3,7 @@ manifest = File.exist?('.manifest') ?
 
 Gem::Specification.new do |s|
   s.name = %q{sleepy_penguin}
-  s.version = (ENV['VERSION'] || '3.4.1').dup
+  s.version = (ENV['VERSION'] || '3.5.0').dup
   s.homepage = 'https://bogomips.org/sleepy_penguin/'
   s.authors = ['sleepy_penguin hackers']
   s.description = File.read('README').split("\n\n")[1]

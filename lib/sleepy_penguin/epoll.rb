@@ -52,6 +52,9 @@ class SleepyPenguin::Epoll
   # single-threaded applications. +maxevents+ defaults to 64 events.
   # +timeout+ is specified in milliseconds, +nil+
   # (the default) meaning it will block and wait indefinitely.
+  #
+  # As of sleepy_penguin 3.5.0+, it is possible to nest
+  # #wait calls within the same thread.
   def wait(maxevents = 64, timeout = nil)
     # snapshot the marks so we do can sit this thread on epoll_wait while other
     # threads may call epoll_ctl.  People say RCU is a poor man's GC, but our
