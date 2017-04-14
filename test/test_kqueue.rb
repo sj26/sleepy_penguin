@@ -6,6 +6,7 @@ class TestKqueue < Test::Unit::TestCase
   def test_kqueue
     kq = Kqueue.new
     assert_kind_of IO, kq.to_io
+    assert_predicate kq.to_io, :close_on_exec?
     rd, wr = IO.pipe
     ev = Kevent[rd.fileno, EvFilt::READ, Ev::ADD|Ev::ONESHOT, 0, 0, rd]
     thr = Thread.new do

@@ -110,6 +110,7 @@ static VALUE s_new(VALUE klass)
 {
 	VALUE rv;
 	int fd = kqueue();
+	int flags;
 
 	if (fd < 0) {
 		/*
@@ -122,9 +123,12 @@ static VALUE s_new(VALUE klass)
 			rb_sys_fail("kqueue");
 	}
 
+	flags = fcntl(fd, F_GETFD);
+	if (flags != -1)
+		fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+
 	rv = INT2FIX(fd);
 
-	/* This will set FD_CLOEXEC on Ruby 2.0.0+: */
 	return rb_call_super(1, &rv);
 }
 
