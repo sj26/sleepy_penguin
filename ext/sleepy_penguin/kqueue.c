@@ -18,6 +18,9 @@
 #ifndef RARRAY_LENINT
 #  define RARRAY_LENINT(ary) (int)RARRAY_LEN(ary)
 #endif
+#ifndef RARRAY_CONST_PTR
+#  define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
+#endif
 #ifndef NUM2SHORT
 #  define NUM2SHORT(n) (short)NUM2INT(n)
 #endif
@@ -233,35 +236,82 @@ static VALUE do_kevent(struct kq_per_thread *kpt)
 	return kevent_result(kpt, (int)nevents);
 }
 
-static void event_set(struct kevent *event, VALUE *chg)
+#if defined(HAVE_RB_STRUCT_SIZE) && defined(RSTRUCT_GET)
+static void ev_set_struct(struct kevent *ev, VALUE event)
 {
-	uintptr_t ident = (uintptr_t)NUM2ULONG(chg[0]);
-	short filter = NUM2SHORT(chg[1]);
-	unsigned short flags = NUM2USHORT(chg[2]);
-	unsigned fflags = (unsigned)NUM2UINT(chg[3]);
-	intptr_t data = (intptr_t)NUM2LONG(chg[4]);
-	void *udata = (void *)chg[5];
+	if (rb_struct_size(event) == INT2NUM(6)) {
+		uintptr_t ident = (uintptr_t)NUM2ULONG(RSTRUCT_GET(event, 0));
+		short filter = NUM2SHORT(RSTRUCT_GET(event, 1));
+		unsigned short flags = NUM2USHORT(RSTRUCT_GET(event, 2));
+		unsigned fflags = (unsigned)NUM2UINT(RSTRUCT_GET(event, 3));
+		intptr_t data = (intptr_t)NUM2LONG(RSTRUCT_GET(event, 4));
+		void *udata = (void *)RSTRUCT_GET(event, 5);
 
-	EV_SET(event, ident, filter, flags, fflags, data, udata);
+		EV_SET(ev, ident, filter, flags, fflags, data, udata);
+	} else {
+		rb_raise(rb_eTypeError, "unsupported struct in changelist");
+	}
+}
+#elif RBX_STRUCT == 0 && defined(RSTRUCT_LEN) && defined(RSTRUCT_PTR)
+/* legacy MRI */
+static void ev_set_struct(struct kevent *ev, VALUE event)
+{
+	long len = RSTRUCT_LEN(*event);
+	if (len == 6) {
+		const VALUE *ptr = RSTRUCT_PTR(*event);
+		uintptr_t ident = (uintptr_t)NUM2ULONG(ptr[0]);
+		short filter = NUM2SHORT(ptr[1]);
+		unsigned short flags = NUM2USHORT(ptr[2]);
+		unsigned fflags = (unsigned)NUM2UINT(ptr[3]);
+		intptr_t data = (intptr_t)NUM2LONG(ptr[4]);
+		void *udata = (void *)ptr[5];
+
+		EV_SET(event, ident, filter, flags, fflags, data, udata);
+	} else {
+		rb_raise(rb_eTypeError, "unsupported struct in changelist");
+	}
+}
+#else
+static void ev_set_struct(struct kevent *ev, VALUE event)
+{
+	rb_raise(rb_eTypeError, "unsupported struct in changelist");
+}
+#endif
+
+static void ev_set_ary(struct kevent *ev, VALUE event)
+{
+	long len = RARRAY_LEN(event);
+	const VALUE *ptr = RARRAY_CONST_PTR(event);
+
+	if (len == 6) {
+		uintptr_t ident = (uintptr_t)NUM2ULONG(ptr[0]);
+		short filter = NUM2SHORT(ptr[1]);
+		unsigned short flags = NUM2USHORT(ptr[2]);
+		unsigned fflags = (unsigned)NUM2UINT(ptr[3]);
+		intptr_t data = (intptr_t)NUM2LONG(ptr[4]);
+		void *udata = (void *)ptr[5];
+
+		EV_SET(ev, ident, filter, flags, fflags, data, udata);
+		return;
+	}
+	rb_raise(rb_eTypeError,
+		"changelist must be an array of 6-element arrays or structs");
 }
 
 /* sets ptr and len */
-static void unpack_event(VALUE **ptr, VALUE *len, VALUE *event)
+static void unpack_event(struct kevent *ev, VALUE event)
 {
-	switch (TYPE(*event)) {
+	switch (TYPE(event)) {
 	case T_STRUCT:
 		if (RBX_STRUCT) {
-			*event = rb_funcall(*event, rb_intern("to_a"), 0, 0);
+			event = rb_funcall(event, rb_intern("to_a"), 0, 0);
 			/* fall-through to T_ARRAY */
 		} else {
-			*len = RSTRUCT_LEN(*event);
-			*ptr = RSTRUCT_PTR(*event);
+			ev_set_struct(ev, event);
 			return;
 		}
 	case T_ARRAY:
-		*len = RARRAY_LEN(*event);
-		*ptr = RARRAY_PTR(*event);
-		return;
+		ev_set_ary(ev, event);
 	default:
 		rb_raise(rb_eTypeError, "unsupported type in changelist");
 	}
@@ -269,24 +319,11 @@ static void unpack_event(VALUE **ptr, VALUE *len, VALUE *event)
 
 static void ary2eventlist(struct kevent *events, VALUE changelist)
 {
-	VALUE *chg = RARRAY_PTR(changelist);
+	const VALUE *chg = RARRAY_CONST_PTR(changelist);
 	long i = RARRAY_LEN(changelist);
-	VALUE event;
 
-	for (; --i >= 0; chg++) {
-		VALUE clen;
-		VALUE *cptr;
-
-		event = *chg;
-		unpack_event(&cptr, &clen, &event);
-		if (clen != 6)
-			goto out_list;
-		event_set(events++, cptr);
-	}
-	return;
-out_list:
-	rb_raise(rb_eTypeError,
-		"changelist must be an array of 6-element arrays or structs");
+	for (; --i >= 0; chg++)
+		unpack_event(events++, *chg);
 }
 
 /*
@@ -294,20 +331,12 @@ out_list:
  */
 static void changelist_prepare(struct kevent *events, VALUE changelist)
 {
-	VALUE *cptr;
-	VALUE clen;
-	VALUE event;
-
 	switch (TYPE(changelist)) {
 	case T_ARRAY:
 		ary2eventlist(events, changelist);
 		return;
-	case T_STRUCT:
-		event = changelist;
-		unpack_event(&cptr, &clen, &event);
-		if (clen != 6)
-			rb_raise(rb_eTypeError, "event is not a Kevent struct");
-		event_set(events, cptr);
+	case T_STRUCT: /* single event */
+		unpack_event(events, changelist);
 		return;
 	default:
 		rb_bug("changelist_prepare not type filtered by sp_kevent");
