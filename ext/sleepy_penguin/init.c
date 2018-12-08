@@ -101,15 +101,13 @@ static struct rb_sp_tlsbuf *alloc_tlsbuf(size_t size)
 	size_t bytes = size + sizeof(struct rb_sp_tlsbuf);
 	struct rb_sp_tlsbuf *buf;
 	void *ptr;
-	int err = posix_memalign(&ptr, rb_sp_l1_cache_line_size, bytes);
 
-	if (err) {
-		errno = err;
+	if (size >= UINT32_MAX ||
+	    posix_memalign(&ptr, rb_sp_l1_cache_line_size, bytes))
 		rb_memerror(); /* fatal */
-	}
 
 	buf = ptr;
-	buf->capa = size;
+	buf->capa = (uint32_t)size;
 
 	return buf;
 }
