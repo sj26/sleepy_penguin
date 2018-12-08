@@ -73,7 +73,7 @@ class SleepyPenguin::Kqueue
     end
 
     if block_given?
-      n = @io.kevent(changelist, *args) do |ident,filter,flags,
+      @io.kevent(changelist, *args) do |ident,filter,flags,
                                                fflags,data,udata|
         # This may raise and cause events to be lost,
         # that's the users' fault/problem
@@ -82,7 +82,7 @@ class SleepyPenguin::Kqueue
                                         fflags, data, udata)
       end
     else
-      n = @io.kevent(changelist, *args)
+      @io.kevent(changelist, *args)
     end
   end
 
