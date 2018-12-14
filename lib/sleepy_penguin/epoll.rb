@@ -27,8 +27,7 @@ class SleepyPenguin::Epoll
     return if @pid == $$
     return if @io.closed?
     objects = @copies.values
-    @copies.each_key { |epio| epio.close }
-    @copies.clear
+    @copies.each_key(&:close).clear
     __ep_reinit
     objects.each do |obj|
       io_dup = @io.dup
