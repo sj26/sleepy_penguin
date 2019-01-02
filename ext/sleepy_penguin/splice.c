@@ -130,7 +130,6 @@ void sleepy_penguin_init_splice(void)
 	 * out of them.
 	 *
 	 * It is highly recommended this flag be set
-         * (or SleepyPenguin.trysplice used)
 	 * whenever splicing from a socket into a pipe unless there is
 	 * another (native) thread or process doing a blocking read on that
 	 * pipe.  Otherwise it is possible to block a single-threaded process
