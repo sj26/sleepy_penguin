@@ -170,9 +170,10 @@ static VALUE nogvl_wait(void *args)
 	return (VALUE)n;
 }
 
-static VALUE real_epwait(struct ep_per_thread *ept)
+static VALUE real_epwait(VALUE p)
 {
 	long n;
+	struct ep_per_thread *ept = (struct ep_per_thread *)p;
 	uint64_t expire_at = ept->timeout > 0 ? now_ms() + ept->timeout : 0;
 
 	ept->fd = rb_sp_fileno(ept->io);
