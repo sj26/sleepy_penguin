@@ -521,8 +521,10 @@ class TestEpoll < Test::Unit::TestCase
   def test_epoll_as_queue
     fl = Epoll::OUT | Epoll::ET
     first = nil
+    to_close = []
     500.times do
-      r, w = IO.pipe
+      r, w = ary = IO.pipe
+      to_close.concat(ary)
       @ep.add(w, fl)
       first ||= begin
         @ep.add(r, Epoll::IN | Epoll::ET)
@@ -533,6 +535,7 @@ class TestEpoll < Test::Unit::TestCase
       @ep.wait(1) { |flags, io| first[1].write('.') if i == 0 }
     end
     @ep.wait(1) { |flags, io| assert_equal(first[0], io) }
+    to_close.each(&:close)
   end
 
   def test_epoll_nest
