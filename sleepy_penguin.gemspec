@@ -4,10 +4,10 @@ manifest = File.exist?('.manifest') ?
 Gem::Specification.new do |s|
   s.name = %q{sleepy_penguin}
   s.version = (ENV['VERSION'] || '3.5.1').dup
-  s.homepage = 'https://bogomips.org/sleepy_penguin/'
+  s.homepage = 'https://yhbt.net/sleepy_penguin/'
   s.authors = ['sleepy_penguin hackers']
   s.description = File.read('README').split("\n\n")[1]
-  s.email = %q{sleepy-penguin@bogomips.org}
+  s.email = %q{sleepy-penguin@yhbt.net}
   s.files = manifest
   s.summary = 'Linux I/O events for Ruby'
   s.test_files = Dir['test/test_*.rb']

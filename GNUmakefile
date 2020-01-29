@@ -1,5 +1,5 @@
 all::
-RSYNC_DEST := bogomips.org:/srv/bogomips/sleepy_penguin
+RSYNC_DEST := yhbt.net:/srv/yhbt/sleepy_penguin
 rfpackage := sleepy_penguin
 include pkg.mk
 pkg_extra += ext/sleepy_penguin/git_version.h

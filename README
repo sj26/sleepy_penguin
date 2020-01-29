@@ -31,7 +31,7 @@ If you use RubyGems:
 
 Otherwise grab the latest tarball from:
 
-https://bogomips.org/sleepy_penguin/files/
+https://yhbt.net/sleepy_penguin/files/
 
 Unpack it, and run "ruby setup.rb"
 
@@ -39,13 +39,13 @@ Unpack it, and run "ruby setup.rb"
 
 You can get the latest source via git from the following locations:
 
-  https://bogomips.org/sleepy_penguin.git
+  https://yhbt.net/sleepy_penguin.git
   https://repo.or.cz/sleepy_penguin.git (mirror)
 
 You may browse the code from the web and download the latest snapshot
 tarballs here:
 
-* https://bogomips.org/sleepy_penguin.git
+* https://yhbt.net/sleepy_penguin.git
 * https://repo.or.cz/w/sleepy_penguin.git (gitweb)
 
 Inline patches (from "git format-patch") to the mailing list are
@@ -60,9 +60,9 @@ don't email the git mailing list or maintainer with sleepy_penguin patches.
 == Contact
 
 All feedback (bug reports, user/development discussion, patches, pull
-requests) go to the mailing list: mailto:sleepy-penguin@bogomips.org
+requests) go to the mailing list: mailto:sleepy-penguin@yhbt.net
 
-* Mailing list archives: https://bogomips.org/sleepy-penguin/
+* Mailing list archives: https://yhbt.net/sleepy-penguin/
 
 * Also available over NNTP:
   nntp://news.public-inbox.org/inbox.comp.lang.ruby.sleepy-penguin
